@@ -1,0 +1,90 @@
+/* ABSOLUTE RESET TO REMOVE ALL ITALICS AND SLANTS */
+*,
+*::before,
+*::after {
+  font-style: normal !important;
+  font-variation-settings: "slnt" 0, "ital" 0 !important;
+}
+
+/* Ensure placeholders are not italicized by browser defaults */
+input::placeholder,
+textarea::placeholder {
+  font-style: normal !important;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-text antialiased;
+  }
+}
+
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.4s ease-out forwards;
+  }
+
+  .transition-all-300 {
+    @apply transition-all duration-300 ease-in-out;
+  }
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Global transitions for common elements */
+button,
+a,
+input,
+select,
+textarea {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+table tr {
+  @apply transition-colors duration-150;
+}
