@@ -251,12 +251,16 @@ const SectionManagement = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                    <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseModal}></div>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+                    {/* Background overlay */}
+                    <div 
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+                        aria-hidden="true"
+                        onClick={handleCloseModal}
+                    ></div>
 
-                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full max-h-[90vh] flex flex-col">
+                    {/* Modal panel */}
+                    <div className="relative bg-white rounded-2xl text-left shadow-2xl transform transition-all sm:max-w-lg w-full max-h-[90vh] flex flex-col border border-gray-200 opacity-100 scale-100">
                             {/* Fixed Header */}
                             <div className="bg-gray-50 px-4 py-4 sm:px-6 flex justify-between items-center border-b border-gray-200 shrink-0">
                                 <h3 className="text-xl font-bold text-gray-900">
@@ -350,8 +354,7 @@ const SectionManagement = () => {
                                 </button>
                             </div>
                         </div>
-                    </div >
-                </div >
+                </div>
             )}
         </div >
     );
