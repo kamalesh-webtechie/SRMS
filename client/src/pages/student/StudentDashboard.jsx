@@ -140,7 +140,7 @@ const StudentDashboard = () => {
                         <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30 overflow-hidden">
                             {(user.profilePhotoUrl || student.profilePhotoUrl) ? (
                                 <img
-                                    src={(user.profilePhotoUrl || student.profilePhotoUrl).startsWith('/') ? `http://localhost:5000${user.profilePhotoUrl || student.profilePhotoUrl}` : (user.profilePhotoUrl || student.profilePhotoUrl)}
+                                    src={getMediaUrl(user.profilePhotoUrl || student.profilePhotoUrl)}
                                     alt={student.name}
                                     className="h-full w-full object-cover"
                                 />

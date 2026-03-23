@@ -153,7 +153,7 @@ const StudentProfile = () => {
                             <div className="h-32 w-32 rounded-full overflow-hidden mx-auto bg-gray-100 border-4 border-white shadow-sm">
                                 {editableData.profilePhoto ? (
                                     <img
-                                        src={editableData.profilePhoto.startsWith('data:') ? editableData.profilePhoto : (editableData.profilePhoto.startsWith('/') ? `http://localhost:5000${editableData.profilePhoto}` : editableData.profilePhoto)}
+                                        src={getMediaUrl(editableData.profilePhoto)}
                                         alt="Profile"
                                         className="h-full w-full object-cover"
                                     />

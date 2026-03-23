@@ -132,7 +132,8 @@ const getAllStudents = async (req, res) => {
         const students = await StudentProfile.find(filter)
             .populate('user', 'name email status')
             .populate('section', 'name') // Populate virtual section
-            .sort({ registerNumber: 1 });
+            .sort({ registerNumber: 1 })
+            .lean();
 
         res.status(200).json(students);
     } catch (error) {
@@ -491,7 +492,8 @@ const getStudentsBySection = async (req, res) => {
         const students = await StudentProfile.find({ sectionId: req.params.sectionId })
             .populate('user', 'name email status')
             .populate('section', 'name semester batch')
-            .sort({ registerNumber: 1 });
+            .sort({ registerNumber: 1 })
+            .lean();
 
         res.status(200).json(students);
     } catch (error) {

@@ -20,7 +20,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded, editingStudent }) =>
         departmentId: '', // Helper for fetching sections
         semester: 1, // Will be derived from section
         sectionId: '',
-        batch: process.env.NODE_ENV === 'development' ? '2023-2027' : '',
+        batch: import.meta.env.MODE === 'development' ? '2023-2027' : '',
         currentYear: 'I',
         gender: 'Male',
         dob: '',
@@ -59,7 +59,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded, editingStudent }) =>
             setFormData({
                 name: '', email: '', registerNumber: '', rollNumber: '',
                 department: '', departmentId: '', semester: 1, sectionId: '',
-                batch: process.env.NODE_ENV === 'development' ? '2023-2027' : '',
+                batch: import.meta.env.MODE === 'development' ? '2023-2027' : '',
                 currentYear: 'I',
                 gender: 'Male',
                 dob: '', contactNumber: '',
@@ -106,6 +106,21 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded, editingStudent }) =>
         };
         fetchSections();
     }, [formData.departmentId]);
+
+    // Fetch Departments for dropdown
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const { data } = await api.get('/departments');
+                setDepartments(data);
+            } catch (error) {
+                console.error("Failed to fetch departments", error);
+            }
+        };
+        if (isOpen) {
+            fetchDepartments();
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

@@ -438,7 +438,7 @@ const DashboardLayout = () => {
                         <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-white font-bold overflow-hidden border border-gray-200">
                             {user.profilePhotoUrl ? (
                                 <img
-                                    src={user.profilePhotoUrl.startsWith('http') ? user.profilePhotoUrl : `http://localhost:5000${user.profilePhotoUrl}`}
+                                    src={getMediaUrl(user.profilePhotoUrl)}
                                     alt={user.name}
                                     className="h-full w-full object-cover"
                                 />

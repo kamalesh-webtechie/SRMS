@@ -224,13 +224,13 @@ const AnnouncementManagement = () => {
                                         <div className="mt-3">
                                             {announcement.attachmentUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
                                                 <img
-                                                    src={`http://localhost:5000${announcement.attachmentUrl}`}
+                                                    src={getMediaUrl(announcement.attachmentUrl)}
                                                     alt="Attachment"
                                                     className="max-h-64 rounded-lg border border-gray-200 object-cover"
                                                 />
                                             ) : (
                                                 <a
-                                                    href={`http://localhost:5000${announcement.attachmentUrl}`}
+                                                    href={getMediaUrl(announcement.attachmentUrl)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium"

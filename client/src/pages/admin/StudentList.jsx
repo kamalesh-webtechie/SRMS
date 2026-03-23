@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, Mail, BookOpen, Edit, RotateCcw, XCircle, Users, Filter, CheckCircle } from 'lucide-react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import AddStudentModal from '../../components/AddStudentModal';
 import BulkStudentUpload from '../../components/BulkStudentUpload';
 import { getActiveBatches, YEARS } from '../../utils/academicUtils';
@@ -346,7 +346,7 @@ const StudentList = () => {
                                 {filteredStudents.map((student) => {
                                     if (!student) return null;
                                     const photo = student.profilePhotoUrl || student.profilePhoto || '';
-                                    const photoSrc = (typeof photo === 'string' && photo.startsWith('/')) ? `http://localhost:5000${photo}` : photo;
+                                    const photoSrc = getMediaUrl(photo);
 
                                     return (
                                         <tr key={student._id} className="hover:bg-gray-50 transition-colors duration-150">
