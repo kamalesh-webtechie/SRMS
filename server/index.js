@@ -50,6 +50,18 @@ app.use(cors({
 
 
 app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            "img-src": ["'self'", "data:", "https:"],
+            "connect-src": ["'self'", "https://srms-sog2.onrender.com", "https://srms-sage.vercel.app"],
+            "font-src": ["'self'", "https://fonts.gstatic.com"],
+            "object-src": ["'none'"],
+            "upgrade-insecure-requests": [],
+        },
+    },
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(morgan('dev'));
