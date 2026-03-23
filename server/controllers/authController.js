@@ -12,8 +12,10 @@ const {
 } = require('@simplewebauthn/server');
 const base64url = require('base64url');
 
-const rpID = 'localhost'; // Should match the domain in production
-const origin = `http://${rpID}:5173`;
+// Use environment variables or defaults for WebAuthn
+const rpID = process.env.NODE_ENV === 'production' ? 'srms-sage.vercel.app' : 'localhost';
+const origin = process.env.NODE_ENV === 'production' ? 'https://srms-sage.vercel.app' : `http://localhost:5173`;
+
 
 // @desc    Auth user & get token
 // @route   POST /api/auth/login

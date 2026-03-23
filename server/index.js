@@ -21,19 +21,33 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
+    'https://srms-sage.vercel.app',
     process.env.FRONTEND_URL  // Future Vercel URL
 ].filter(Boolean);
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        const isAllowed = allowedOrigins.some(allowed => {
+            // Check exact match or if the allowed origin matches the start of the origin
+            // (e.g., to handle trailing slashes or subdomains if needed)
+            return origin === allowed || origin.startsWith(allowed);
+        });
+
+        if (isAllowed) {
             callback(null, true);
         } else {
-            callback(new Error('Not allowed by CORS'));
+            // For disallowed origins, we just return false instead of an error
+            // to avoid triggering the 500 error handler on preflight (OPTIONS)
+            console.log(`CORS blocked for origin: ${origin}`);
+            callback(null, false);
         }
     },
     credentials: true
 }));
+
 
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
