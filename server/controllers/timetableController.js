@@ -322,3 +322,63 @@ exports.deleteTimeTable = async (req, res) => {
         });
     }
 };
+
+// @desc    Bulk upload timetable
+// @route   POST /api/timetable/bulk
+// @access  Private/Admin
+exports.bulkUploadTimeTable = async (req, res) => {
+    try {
+        const { department, batch, year, section, semester, days } = req.body;
+
+        if (!department || !batch || !year || !section || !semester || !days) {
+            return res.status(400).json({ success: false, message: 'Missing required timetable metadata' });
+        }
+
+        // Check for existing timetable for this specific slot
+        let timetable = await TimeTable.findOne({ department, batch, year, section, semester });
+
+        // Sanitize days/periods
+        const sanitizedDays = days.map(dayData => ({
+            day: dayData.day,
+            periods: (dayData.periods || []).map(p => {
+                const period = { ...p };
+                // If facultyId is already an object (from frontend), extract ID
+                if (period.facultyId && typeof period.facultyId === 'object') {
+                    period.facultyId = period.facultyId._id;
+                }
+                // Cleanup empty strings
+                if (period.facultyId === "" || period.facultyId === null) delete period.facultyId;
+                if (period.subject === "" || period.subject === null) delete period.subject;
+                return period;
+            })
+        }));
+
+        if (timetable) {
+            // Update existing
+            timetable.days = sanitizedDays;
+            await timetable.save();
+        } else {
+            // Create new
+            timetable = await TimeTable.create({
+                department,
+                batch,
+                year,
+                section,
+                semester,
+                days: sanitizedDays
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Timetable uploaded successfully',
+            data: timetable
+        });
+    } catch (error) {
+        console.error('Bulk Timetable Upload Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Server Error during bulk upload'
+        });
+    }
+};

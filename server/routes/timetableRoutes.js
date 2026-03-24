@@ -7,11 +7,13 @@ const {
     getStudentTimeTable,
     getFacultyTimeTable,
     updateTimeTable,
-    deleteTimeTable
+    deleteTimeTable,
+    bulkUploadTimeTable
 } = require('../controllers/timetableController');
 
 // Admin & HOD routes
 router.post('/create', protect, authorize('admin', 'hod'), createTimeTable);
+router.post('/bulk', protect, authorize('admin', 'hod'), bulkUploadTimeTable);
 router.get('/', protect, authorize('admin', 'hod'), getTimeTables);
 router.put('/update/:id', protect, authorize('admin', 'hod'), updateTimeTable);
 router.delete('/delete/:id', protect, authorize('admin', 'hod'), deleteTimeTable);

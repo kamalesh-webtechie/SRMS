@@ -123,6 +123,13 @@ const deleteFaculty = async (req, res) => {
             return res.status(404).json({ message: 'Faculty profile not found' });
         }
 
+        // Check if this faculty was an HOD and clear the department's hodId
+        const user = await User.findById(profile.user);
+        if (user && user.role === 'hod' && user.departmentId) {
+            await Department.findByIdAndUpdate(user.departmentId, { hodId: null });
+            console.log(`Cleared hodId for department ${user.departmentId} as HOD ${user.name} is being deleted.`);
+        }
+
         // Delete User first
         await User.findByIdAndDelete(profile.user);
 

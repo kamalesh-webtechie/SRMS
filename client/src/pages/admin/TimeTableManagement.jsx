@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, X, Save, AlertCircle, Calendar, Clock } from 'lucide-react';
+import { Plus, Trash2, Edit, X, Save, AlertCircle, Calendar, Clock, Upload } from 'lucide-react';
 import api from '../../services/api';
 import { getActiveBatches, YEARS, SEMESTERS } from '../../utils/academicUtils';
 import { useSystem } from '../../context/SystemContext';
 import { useAuth } from '../../context/AuthContext';
+import BulkTimeTableUpload from '../../components/BulkTimeTableUpload';
 
 const TimeTableManagement = () => {
     const { user } = useAuth();
@@ -16,6 +17,7 @@ const TimeTableManagement = () => {
     const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showBulkModal, setShowBulkModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentTimetable, setCurrentTimetable] = useState(null);
 
@@ -240,6 +242,16 @@ const TimeTableManagement = () => {
         }
     };
 
+    const handleBulkData = (data) => {
+        setDayPeriods(data.reduce((acc, day) => {
+            acc[day.day] = day.periods;
+            return acc;
+        }, {}));
+        setShowBulkModal(false);
+        setShowModal(true);
+        setSuccessMessage('Timetable data imported. Please review and save.');
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm('Delete this timetable?')) {
             try {
@@ -317,13 +329,22 @@ const TimeTableManagement = () => {
                     <h2 className="text-2xl font-bold text-gray-900">Time Table Management</h2>
                     <p className="text-gray-500 mt-1">Create and manage class timetables</p>
                 </div>
-                <button
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Timetable
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => { resetForm(); setShowBulkModal(true); }}
+                        className="inline-flex items-center px-4 py-2 border border-indigo-200 text-sm font-medium rounded-lg shadow-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                    >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Bulk Upload
+                    </button>
+                    <button
+                        onClick={() => { resetForm(); setShowModal(true); }}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Timetable
+                    </button>
+                </div>
             </div>
 
             {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -628,6 +649,24 @@ const TimeTableManagement = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
+            <AddFacultyModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onFacultyAdded={fetchFaculty}
+                editingFaculty={editingFaculty}
+            />
+            
+            {showBulkModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-fade-in">
+                    <BulkTimeTableUpload 
+                        onClose={() => setShowBulkModal(false)}
+                        onDataUpload={handleBulkData}
+                        faculties={faculties}
+                        subjects={subjects}
+                        metadata={formData}
+                    />
                 </div>
             )}
         </div>

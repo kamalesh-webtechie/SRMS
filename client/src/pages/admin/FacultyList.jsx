@@ -46,6 +46,7 @@ const FacultyList = () => {
 
         const timer = setTimeout(async () => {
             try {
+                setUndoStack(prev => ({ ...prev, syncing: true, message: `Permanently removing "${itemToDelete.user.name}"...` }));
                 await api.delete(`/faculty/${id}`);
                 setUndoStack(null);
             } catch (error) {
@@ -53,10 +54,11 @@ const FacultyList = () => {
                 setFaculty(originalData);
                 setUndoStack(null);
             }
-        }, 6000);
+        }, 3000);
 
         setUndoStack({
             message: `Faculty "${itemToDelete.user.name}" removed.`,
+            syncing: false,
             action: () => {
                 clearTimeout(timer);
                 setFaculty(originalData);
@@ -88,20 +90,26 @@ const FacultyList = () => {
                 <div className="fixed bottom-4 right-4 z-[100] bg-gray-900 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center justify-between min-w-[320px] animate-slide-up border border-gray-700">
                     <div className="flex items-center">
                         <div className="mr-3 text-orange-400">
-                            <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
-                            </span>
+                            {undoStack.syncing ? (
+                                <div className="h-4 w-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                                </span>
+                            )}
                         </div>
                         <p className="font-medium">{undoStack.message}</p>
                     </div>
-                    <button
-                        onClick={undoStack.action}
-                        className="ml-6 flex items-center bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded font-bold transition-colors group"
-                    >
-                        <RotateCcw className="h-4 w-4 mr-2 group-hover:rotate-[-45deg] transition-transform" />
-                        UNDO
-                    </button>
+                    {!undoStack.syncing && (
+                        <button
+                            onClick={undoStack.action}
+                            className="ml-6 flex items-center bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded font-bold transition-colors group"
+                        >
+                            <RotateCcw className="h-4 w-4 mr-2 group-hover:rotate-[-45deg] transition-transform" />
+                            UNDO
+                        </button>
+                    )}
                 </div>
             )}
 
