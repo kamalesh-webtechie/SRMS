@@ -96,7 +96,7 @@ const AttendanceSheet = () => {
                 if (secRes.data.length > 0) setSelectedSectionId(secRes.data[0]._id);
                 const dept = departments.find(d => d._id === selectedDeptId);
                 if (dept) {
-                    const subRes = await api.get(`/academic/subjects?department=${dept.code}`);
+                    const subRes = await api.get(`/academic/subjects?department=${dept.code || dept.name}`);
                     setSubjects(subRes.data);
                     if (subRes.data.length > 0) setSelectedSubjectId(subRes.data[0]._id);
                 }

@@ -256,7 +256,7 @@ const AttendanceReports = () => {
                             className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
                         >
                             {departments.map((d, i) => (
-                                <option key={i} value={d.code}>{d.name}</option>
+                                <option key={i} value={d.code || d.name}>{d.name}</option>
                             ))}
                         </select>
                     </div>

@@ -108,7 +108,14 @@ const DepartmentList = () => {
                                 </div>
                             </div>
 
-                            <h3 className="text-lg font-bold text-gray-900">{dept.name}</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-gray-900">{dept.name}</h3>
+                                {dept.code && (
+                                    <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded uppercase border border-indigo-200">
+                                        {dept.code}
+                                    </span>
+                                )}
+                            </div>
 
 
                             <div className="mt-4 space-y-2">

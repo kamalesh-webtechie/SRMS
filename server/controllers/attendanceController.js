@@ -26,7 +26,8 @@ const resolveDeptCode = async (input) => {
             { code: new RegExp(`^${input}$`, 'i') }
         ]
     });
-    return dept ? dept.code : input;
+    // Return code if available, otherwise return name, otherwise return input
+    return dept ? (dept.code || dept.name) : input;
 };
 
 // @desc    Mark attendance for a batch of students
@@ -329,13 +330,20 @@ const getDailyAttendanceReport = async (req, res) => {
         const end = new Date(endDate || startDate || new Date());
         end.setHours(23, 59, 59, 999);
 
+        // Build query
         const matchQuery = {
             department: department,
             attendanceDate: { $gte: start, $lte: end }
         };
 
-        if (year) matchQuery['sectionInfo.year'] = year; // We'll need to join for this if filtering by year in summary
-        if (sectionId) matchQuery.sectionId = new mongoose.Types.ObjectId(sectionId);
+        if (sectionId) {
+            matchQuery.sectionId = new mongoose.Types.ObjectId(sectionId);
+        } else if (year) {
+            // If year is provided but no specific section, we need to find all sections for that year
+            const YearSections = await mongoose.model('Section').find({ department: department, year });
+            const sectionIds = YearSections.map(s => s._id);
+            matchQuery.sectionId = { $in: sectionIds };
+        }
 
         if (reportType === 'absentees') {
             // Detailed list of all absentees in the range

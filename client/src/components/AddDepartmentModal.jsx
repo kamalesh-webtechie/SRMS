@@ -7,7 +7,7 @@ const AddDepartmentModal = ({ isOpen, onClose, onDepartmentAdded, editingDepartm
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
-
+        code: '',
         hodName: '',
         description: ''
     });
@@ -16,13 +16,13 @@ const AddDepartmentModal = ({ isOpen, onClose, onDepartmentAdded, editingDepartm
         if (editingDepartment) {
             setFormData({
                 name: editingDepartment.name,
-
+                code: editingDepartment.code || '',
                 hodName: editingDepartment.hodName || '',
                 description: editingDepartment.description || ''
             });
         } else {
             setFormData({
-                name: '', hodName: '', description: ''
+                name: '', code: '', hodName: '', description: ''
             });
         }
         setError('');
@@ -85,6 +85,14 @@ const AddDepartmentModal = ({ isOpen, onClose, onDepartmentAdded, editingDepartm
                                     placeholder="e.g. Computer Science Engineering"
                                     className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
                                     value={formData.name} onChange={handleChange} />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Department Code *</label>
+                                <input type="text" name="code" required
+                                    placeholder="e.g. CSE"
+                                    className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow uppercase"
+                                    value={formData.code} onChange={handleChange} />
                             </div>
 
                             <div>
