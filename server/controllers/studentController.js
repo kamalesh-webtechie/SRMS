@@ -3,6 +3,7 @@ const StudentProfile = require('../models/StudentProfile');
 const Department = require('../models/Department');
 const Section = require('../models/Section');
 const logAction = require('../utils/logger');
+const bcrypt = require('bcryptjs');
 
 // @desc    Register a new student
 // @route   POST /api/students
@@ -313,27 +314,27 @@ const updateStudentProfile = async (req, res) => {
 // @access  Private/Admin
 const bulkUploadStudents = async (req, res) => {
     const studentsData = req.body;
-    console.log(`Starting optimized bulk upload for ${studentsData?.length} students...`);
-    console.time('bulkUpload');
+    console.log(`Starting HIGH-SPEED bulk upload for ${studentsData?.length} students...`);
+    console.time('highSpeedBulkUpload');
     
-    if (!Array.isArray(studentsData)) {
-        console.timeEnd('bulkUpload');
-        return res.status(400).json({ message: 'Invalid data format. Expected array.' });
+    if (!Array.isArray(studentsData) || studentsData.length === 0) {
+        console.timeEnd('highSpeedBulkUpload');
+        return res.status(400).json({ message: 'Invalid data format. Expected non-empty array.' });
     }
 
+    const errors = [];
+    const validRows = [];
+    const processedEmails = new Set();
+    const processedRegNos = new Set();
     let createdCount = 0;
-    let errors = [];
 
     try {
-        // 1. Pre-fetch ALL Departments and Sections for fast memory lookup
+        // 1. Pre-fetch ALL Departments and Sections (Fast Lookup)
         const [allDepts, allSections] = await Promise.all([
             Department.find({}).lean(),
             Section.find({ isActive: true }).lean()
         ]);
 
-        console.log(`Pre-fetched ${allDepts.length} departments and ${allSections.length} active sections.`);
-
-        // Helper to find department by name or code (extremely lenient)
         const findDept = (input) => {
             if (!input) return null;
             const normalized = String(input).trim().toLowerCase();
@@ -345,12 +346,10 @@ const bulkUploadStudents = async (req, res) => {
             );
         };
 
-        // Helper to find section (lenient with batch format)
         const findSection = (deptId, batch, name) => {
             if (!deptId || !batch || !name) return null;
             const normalizedName = String(name).trim().toLowerCase();
-            const normalizedBatch = String(batch).trim().replace(/\s/g, '').toLowerCase(); // Remove all spaces
-            
+            const normalizedBatch = String(batch).trim().replace(/\s/g, '').toLowerCase();
             return allSections.find(s => {
                 const sBatch = s.batch.replace(/\s/g, '').toLowerCase();
                 return s.departmentId.toString() === deptId.toString() && 
@@ -359,139 +358,197 @@ const bulkUploadStudents = async (req, res) => {
             });
         };
 
-        // 2. Process students in parallel chunks
-        const CHUNK_SIZE = 10;
-        for (let i = 0; i < studentsData.length; i += CHUNK_SIZE) {
-            const chunk = studentsData.slice(i, i + CHUNK_SIZE);
-            
-            const chunkPromises = chunk.map(async (data, index) => {
-                const rowIndex = i + index + 1;
-                try {
-                    // Normalize and trim
-                    data.email = data.email ? String(data.email).trim() : '';
-                    data.name = data.name ? String(data.name).trim() : '';
-                    data.registerNumber = data.registerNumber ? String(data.registerNumber).trim() : '';
-                    data.batch = data.batch ? String(data.batch).trim() : '';
-                    data.department = data.department ? String(data.department).trim() : '';
-                    data.section = data.section ? String(data.section).trim() : '';
+        // 2. Pre-fetch existing Users/Profiles to check duplicates in ONE query
+        const emailsToCheck = studentsData.map(d => String(d.email || '').trim().toLowerCase()).filter(e => e);
+        const regNosToCheck = studentsData.map(d => String(d.registerNumber || '').trim()).filter(r => r);
 
-                    if (!data.registerNumber || !data.name || !data.rollNumber || !data.dob || !data.department || !data.section || !data.batch) {
-                        const missing = [];
-                        if (!data.name) missing.push('Name');
-                        if (!data.registerNumber) missing.push('Register Number');
-                        if (!data.rollNumber) missing.push('Roll Number');
-                        if (!data.dob) missing.push('Date of Birth');
-                        if (!data.department) missing.push('Department');
-                        if (!data.section) missing.push('Section');
-                        if (!data.batch) missing.push('Batch');
-                        return { error: `Row ${rowIndex}: Missing mandatory fields: ${missing.join(', ')}` };
-                    }
+        const [existingUsers, existingProfiles] = await Promise.all([
+            User.find({ 
+                $or: [
+                    { email: { $in: emailsToCheck } },
+                    { username: { $in: regNosToCheck } }
+                ] 
+            }).select('email username').lean(),
+            StudentProfile.find({ registerNumber: { $in: regNosToCheck } }).select('registerNumber').lean()
+        ]);
 
-                    // Auto-generate email if missing
-                    if (!data.email) {
-                        data.email = `${data.registerNumber.toLowerCase()}@srms.edu`;
-                    }
+        const existingEmails = new Set(existingUsers.map(u => u.email.toLowerCase()));
+        const existingUsernames = new Set(existingUsers.map(u => u.username));
+        const existingRegNos = new Set(existingProfiles.map(p => p.registerNumber));
 
-                    // Validation Lookups
-                    const dept = findDept(data.department);
-                    if (!dept) {
-                        const available = allDepts.map(d => `${d.name} (${d.code || 'No Code'})`).join(', ');
-                        return { error: `Row ${rowIndex}: Department '${data.department}' not found. Available: [${available}]` };
-                    }
+        // 3. Validation and Normalization Phase
+        const salt = await bcrypt.genSalt(10);
+        const hashCache = new Map();
 
-                    const section = findSection(dept._id, data.batch, data.section);
-                    if (!section) {
-                        const deptSections = allSections.filter(s => s.departmentId.toString() === dept._id.toString());
-                        const availableSections = deptSections.map(s => `${s.name} in ${s.batch}`).join(', ');
-                        return { error: `Row ${rowIndex}: Section '${data.section}' for batch '${data.batch}' not found in ${dept.name}. Available for this dept: [${availableSections || 'None'}]` };
-                    }
+        for (let i = 0; i < studentsData.length; i++) {
+            const data = studentsData[i];
+            const rowIndex = i + 1;
 
-                    // Check duplicate email or register number (username)
-                    const existingUser = await User.findOne({ 
-                        $or: [
-                            { email: data.email },
-                            { username: data.registerNumber }
-                        ] 
-                    });
-                    
-                    if (existingUser) {
-                        const conflict = existingUser.email === data.email ? 'Email' : 'Register Number';
-                        return { error: `Row ${rowIndex}: ${conflict} already exists for another user.` };
-                    }
+            // Normalize
+            const name = String(data.name || '').trim();
+            const regNo = String(data.registerNumber || '').trim();
+            const rollNo = String(data.rollNumber || '').trim();
+            const dobOrig = data.dob;
+            const batch = String(data.batch || '').trim();
+            const deptName = String(data.department || '').trim();
+            const sectionName = String(data.section || '').trim();
+            let email = String(data.email || '').trim().toLowerCase();
 
-                    // Password Generation
-                    let password = 'password123';
-                    if (data.dob) {
-                        try {
-                            const dateObj = new Date(data.dob);
-                            if (!isNaN(dateObj.getTime())) {
-                                const d = String(dateObj.getDate()).padStart(2, '0');
-                                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                                const y = dateObj.getFullYear();
-                                password = `${d}${m}${y}`;
-                            }
-                        } catch (e) { }
-                    }
+            // Mandatory Field Check
+            if (!regNo || !name || !rollNo || !dobOrig || !deptName || !sectionName || !batch) {
+                const missing = [];
+                if (!name) missing.push('Name');
+                if (!regNo) missing.push('Register Number');
+                if (!rollNo) missing.push('Roll Number');
+                if (!dobOrig) missing.push('Date of Birth');
+                if (!deptName) missing.push('Department');
+                if (!sectionName) missing.push('Section');
+                if (!batch) missing.push('Batch');
+                errors.push(`Row ${rowIndex}: Missing mandatory fields: ${missing.join(', ')}`);
+                continue;
+            }
 
-                    // Create User
-                    const user = await User.create({
-                        name: data.name,
-                        email: data.email,
-                        password: password,
-                        role: 'student',
-                        username: data.registerNumber
-                    });
+            // Fallback Email
+            if (!email) email = `${regNo.toLowerCase()}@srms.edu`;
 
-                    try {
-                        let normalizedGender = 'Other';
-                        const inputGender = data.gender ? String(data.gender).trim().toLowerCase() : '';
-                        if (['male', 'm'].includes(inputGender)) normalizedGender = 'Male';
-                        else if (['female', 'f'].includes(inputGender)) normalizedGender = 'Female';
+            // Duplicate Check (Internal to this file)
+            if (processedEmails.has(email) || processedRegNos.has(regNo)) {
+                errors.push(`Row ${rowIndex}: Duplicate Email or Register Number within this file.`);
+                continue;
+            }
 
-                        await StudentProfile.create({
-                            user: user._id,
-                            registerNumber: data.registerNumber,
-                            rollNumber: data.rollNumber,
-                            department: dept.name,
-                            departmentId: dept._id,
-                            semester: section.semester,
-                            sectionId: section._id,
-                            batch: data.batch,
-                            contactNumber: data.contactNumber,
-                            dob: data.dob,
-                            gender: normalizedGender,
-                            currentYear: section.year || 'I',
-                            whatsappNumber: data.whatsappNumber ? String(data.whatsappNumber).trim() : '',
-                            address: data.address ? String(data.address).trim() : '',
-                            bloodGroup: data.bloodGroup ? String(data.bloodGroup).trim() : '',
-                            guardianName: data.guardianName ? String(data.guardianName).trim() : '',
-                            guardianContact: data.guardianContact ? String(data.guardianContact).trim() : '',
-                        });
-                        return { success: true };
-                    } catch (profileError) {
-                        await User.findByIdAndDelete(user._id);
-                        return { error: `Row ${rowIndex}: Profile error - ${profileError.message}` };
-                    }
-                } catch (err) {
-                    console.error(`Row ${rowIndex} error:`, err);
-                    return { error: `Row ${rowIndex}: Server error during processing.` };
-                }
-            });
+            // Duplicate Check (Against Database)
+            if (existingEmails.has(email) || existingUsernames.has(regNo) || existingRegNos.has(regNo)) {
+                errors.push(`Row ${rowIndex}: Email or Register Number already exists in the system.`);
+                continue;
+            }
 
-            const chunkResults = await Promise.all(chunkPromises);
-            chunkResults.forEach(res => {
-                if (res.success) createdCount++;
-                if (res.error) {
-                    errors.push(res.error);
-                    console.warn(res.error);
+            // Academic Lookups
+            const dept = findDept(deptName);
+            if (!dept) {
+                errors.push(`Row ${rowIndex}: Department '${deptName}' not found.`);
+                continue;
+            }
+
+            const section = findSection(dept._id, batch, sectionName);
+            if (!section) {
+                errors.push(`Row ${rowIndex}: Section '${sectionName}' for batch '${batch}' not found in ${dept.name}.`);
+                continue;
+            }
+
+            // Map and Save for Insert Phase
+            processedEmails.add(email);
+            processedRegNos.add(regNo);
+
+            validRows.push({
+                rowIndex,
+                userData: {
+                    name,
+                    email,
+                    username: regNo,
+                    role: 'student',
+                    dob: dobOrig // Needed for password generation
+                },
+                profileData: {
+                    registerNumber: regNo,
+                    rollNumber: rollNo,
+                    department: dept.name,
+                    departmentId: dept._id,
+                    semester: section.semester,
+                    sectionId: section._id,
+                    batch,
+                    dob: dobOrig,
+                    currentYear: section.year || 'I',
+                    gender: (data.gender && ['male', 'm'].includes(String(data.gender).trim().toLowerCase())) 
+                        ? 'Male' 
+                        : (data.gender && ['female', 'f'].includes(String(data.gender).trim().toLowerCase()))
+                            ? 'Female'
+                            : 'Other',
+                    whatsappNumber: String(data.whatsappNumber || '').trim(),
+                    address: String(data.address || '').trim(),
+                    bloodGroup: String(data.bloodGroup || '').trim(),
+                    guardianName: String(data.guardianName || '').trim(),
+                    guardianContact: String(data.guardianContact || '').trim(),
+                    contactNumber: String(data.contactNumber || '').trim(),
                 }
             });
         }
 
-        // Audit Bulk Action
+        if (validRows.length === 0) {
+            console.timeEnd('highSpeedBulkUpload');
+            return res.status(200).json({ 
+                message: `No rows were valid for import. Errors: ${errors.length}`, 
+                errors, 
+                createdCount: 0, 
+                errorCount: errors.length 
+            });
+        }
+
+        // 4. Batch Password Hashing
+        console.log(`Hashing passwords for ${validRows.length} students...`);
+        for (const row of validRows) {
+            let password = 'password123';
+            if (row.userData.dob) {
+                try {
+                    const dateObj = new Date(row.userData.dob);
+                    if (!isNaN(dateObj.getTime())) {
+                        const d = String(dateObj.getDate()).padStart(2, '0');
+                        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                        const y = dateObj.getFullYear();
+                        password = `${d}${m}${y}`;
+                    }
+                } catch (e) { }
+            }
+
+            if (hashCache.has(password)) {
+                row.userData.password = hashCache.get(password);
+            } else {
+                const hashedPassword = await bcrypt.hash(password, salt);
+                hashCache.set(password, hashedPassword);
+                row.userData.password = hashedPassword;
+            }
+        }
+
+        // 5. Bulk Insert Phase
+        console.log(`Inserting ${validRows.length} users...`);
+        let createdUsers = [];
+        try {
+            createdUsers = await User.insertMany(validRows.map(r => r.userData), { ordered: false });
+        } catch (e) {
+            if (e.name === 'BulkWriteError' || e.name === 'MongoBulkWriteError') {
+                const createdIds = e.result.insertedIds ? Object.values(e.result.insertedIds) : [];
+                createdUsers = await User.find({ _id: { $in: createdIds } }).select('username _id').lean();
+            } else throw e;
+        }
+
+        // Map User IDs back to Profile Data
+        const userMap = new Map(); // username -> _id
+        createdUsers.forEach(u => userMap.set(u.username, u._id));
+
+        const profilesToInsert = validRows
+            .filter(r => userMap.has(r.userData.username))
+            .map(r => ({
+                ...r.profileData,
+                user: userMap.get(r.userData.username)
+            }));
+
+        console.log(`Inserting ${profilesToInsert.length} profiles...`);
+        let createdProfilesCount = 0;
+        try {
+            const result = await StudentProfile.insertMany(profilesToInsert, { ordered: false });
+            createdProfilesCount = result.length;
+        } catch (e) {
+            if (e.name === 'BulkWriteError' || e.name === 'MongoBulkWriteError') {
+                createdProfilesCount = e.result.nInserted || 0;
+            } else throw e;
+        }
+
+        createdCount = createdProfilesCount;
+
+        // 6. Audit Logging
         try {
             await logAction({
-                action: 'BULK_UPLOAD',
+                action: 'BULK_UPLOAD_HIGH_SPEED',
                 actorId: req.user?._id || 'unknown',
                 actorName: req.user?.name || 'unknown',
                 targetEntity: 'Student',
@@ -502,18 +559,17 @@ const bulkUploadStudents = async (req, res) => {
             console.error('Audit Logging Failed:', auditError);
         }
 
-        console.timeEnd('bulkUpload');
-        console.log(`Optimized Bulk upload complete. Created: ${createdCount}, Errors: ${errors.length}`);
+        console.timeEnd('highSpeedBulkUpload');
         res.status(200).json({ 
-            message: `Processed. Created: ${createdCount}. Errors: ${errors.length}`, 
+            message: `High-speed import complete. Created: ${createdCount}. Errors: ${errors.length}`, 
             errors,
             createdCount,
             errorCount: errors.length
         });
 
     } catch (error) {
-        console.timeEnd('bulkUpload');
-        console.error('CRITICAL BULK UPLOAD ERROR:', error);
+        console.timeEnd('highSpeedBulkUpload');
+        console.error('CRITICAL HIGH-SPEED BULK UPLOAD ERROR:', error);
         res.status(500).json({ message: error.message || 'Server Error' });
     }
 };
