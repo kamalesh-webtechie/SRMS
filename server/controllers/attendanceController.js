@@ -30,6 +30,18 @@ const resolveDeptCode = async (input) => {
     return dept ? (dept.code || dept.name) : input;
 };
 
+// Helper to resolve department name/code to its ObjectId
+const resolveDeptId = async (input) => {
+    if (!input) return null;
+    const dept = await Department.findOne({
+        $or: [
+            { name: new RegExp(`^${input}$`, 'i') },
+            { code: new RegExp(`^${input}$`, 'i') }
+        ]
+    });
+    return dept ? dept._id : null;
+};
+
 // @desc    Mark attendance for a batch of students
 // @route   POST /api/attendance
 // @access  Private/Faculty
@@ -322,35 +334,42 @@ const getDailyAttendanceReport = async (req, res) => {
         const { startDate, endDate, department: deptParam, year, sectionId, reportType } = req.query;
         if (!deptParam) return res.status(400).json({ message: 'Department is required' });
 
-        const department = await resolveDeptCode(deptParam);
-
         const start = new Date(startDate || new Date());
         start.setHours(0, 0, 0, 0);
 
         const end = new Date(endDate || startDate || new Date());
         end.setHours(23, 59, 59, 999);
 
-        // Build query
-        const matchQuery = {
-            department: department,
-            attendanceDate: { $gte: start, $lte: end }
-        };
-
-        if (sectionId) {
-            matchQuery.sectionId = new mongoose.Types.ObjectId(sectionId);
-        } else if (year) {
-            // If year is provided but no specific section, we need to find all sections for that year
-            const YearSections = await mongoose.model('Section').find({ department: department, year });
-            const sectionIds = YearSections.map(s => s._id);
-            matchQuery.sectionId = { $in: sectionIds };
-        }
+        // Resolve department to ID for robust filtering
+        const resolvedDeptId = await resolveDeptId(deptParam);
+        const department = await resolveDeptCode(deptParam);
 
         if (reportType === 'absentees') {
-            // Detailed list of all absentees in the range
-            const absentees = await Attendance.find({
-                ...matchQuery,
+            const absenteeQuery = {
+                attendanceDate: { $gte: start, $lte: end },
                 status: 'Absent'
-            })
+            };
+
+            if (sectionId) {
+                absenteeQuery.sectionId = new mongoose.Types.ObjectId(sectionId);
+            } else if (resolvedDeptId) {
+                const deptSections = await mongoose.model('Section').find({ 
+                    departmentId: resolvedDeptId,
+                    ...(year ? { year } : {})
+                });
+                const deptSectionIds = deptSections.map(s => s._id);
+                absenteeQuery.sectionId = { $in: deptSectionIds };
+            } else {
+                // Legacy fallback if dept ID not resolved
+                absenteeQuery.department = department;
+                if (year) {
+                    const yearSections = await mongoose.model('Section').find({ department, year });
+                    const yearSectionIds = yearSections.map(s => s._id);
+                    absenteeQuery.sectionId = { $in: yearSectionIds };
+                }
+            }
+
+            const absentees = await Attendance.find(absenteeQuery)
                 .populate({
                     path: 'student',
                     select: 'user registerNumber batch currentYear',
@@ -369,21 +388,15 @@ const getDailyAttendanceReport = async (req, res) => {
                 section: r.sectionId?.name,
                 subjectName: r.subject?.name,
                 subjectCode: r.subject?.code,
-                facultyName: r.markedBy?.name // Will need population if names needed
+                facultyName: r.markedBy?.name
             }));
 
             return res.status(200).json(flatAbsentees);
         }
 
-        // Default: Summary Report
-        const report = await Attendance.aggregate([
-            {
-                $match: {
-                    department: department,
-                    attendanceDate: { $gte: start, $lte: end }
-                }
-            },
-            ...(sectionId ? [{ $match: { sectionId: new mongoose.Types.ObjectId(sectionId) } }] : []),
+        // Summary Report
+        const pipeline = [
+            { $match: { attendanceDate: { $gte: start, $lte: end } } },
             {
                 $lookup: {
                     from: 'sections',
@@ -393,6 +406,12 @@ const getDailyAttendanceReport = async (req, res) => {
                 }
             },
             { $unwind: '$sectionInfo' },
+            // Robust Filter: Use departmentId OR legacy department name string
+            ...(resolvedDeptId 
+                ? [{ $match: { 'sectionInfo.departmentId': resolvedDeptId } }]
+                : [{ $match: { department: department } }]
+            ),
+            ...(sectionId ? [{ $match: { sectionId: new mongoose.Types.ObjectId(sectionId) } }] : []),
             ...(year ? [{ $match: { 'sectionInfo.year': year } }] : []),
             {
                 $group: {
@@ -401,15 +420,9 @@ const getDailyAttendanceReport = async (req, res) => {
                         sectionId: '$sectionId',
                         date: { $dateToString: { format: "%Y-%m-%d", date: "$attendanceDate" } }
                     },
-                    totalPresent: {
-                        $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] }
-                    },
-                    totalAbsent: {
-                        $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] }
-                    },
-                    totalOD: {
-                        $sum: { $cond: [{ $eq: ['$status', 'On-duty'] }, 1, 0] }
-                    },
+                    totalPresent: { $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] } },
+                    totalAbsent: { $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] } },
+                    totalOD: { $sum: { $cond: [{ $eq: ['$status', 'On-duty'] }, 1, 0] } },
                     markedBy: { $first: '$markedBy' }
                 }
             },
@@ -421,7 +434,7 @@ const getDailyAttendanceReport = async (req, res) => {
                     as: 'subjectInfo'
                 }
             },
-            { $unwind: '$subjectInfo' },
+            { $unwind: { path: '$subjectInfo', preserveNullAndEmptyArrays: true } },
             {
                 $lookup: {
                     from: 'sections',
@@ -442,6 +455,7 @@ const getDailyAttendanceReport = async (req, res) => {
             { $unwind: { path: '$facultyInfo', preserveNullAndEmptyArrays: true } },
             {
                 $project: {
+                    _id: 0,
                     date: '$_id.date',
                     departmentName: department,
                     year: '$sectionDetails.year',
@@ -456,15 +470,10 @@ const getDailyAttendanceReport = async (req, res) => {
                     sectionId: '$_id.sectionId'
                 }
             },
-            {
-                $sort: {
-                    date: -1,
-                    year: 1,
-                    section: 1
-                }
-            }
-        ]);
+            { $sort: { date: -1, year: 1, section: 1 } }
+        ];
 
+        const report = await Attendance.aggregate(pipeline);
         res.status(200).json(report);
 
     } catch (error) {
@@ -506,25 +515,34 @@ module.exports = {
 // @route   GET /api/attendance/report/student-details
 // @access  Private/Admin
 async function getAttendanceStudentDetails(req, res) {
-    // Attendance student details and subject-wise views are generated directly from the Attendance collection
     try {
         const { subjectId, date, department: deptParam, sectionId } = req.query;
         if ((!subjectId && !sectionId) || !date || !deptParam) {
             return res.status(400).json({ message: 'subjectId or sectionId, date and department are required' });
         }
 
+        const resolvedDeptId = await resolveDeptId(deptParam);
         const department = await resolveDeptCode(deptParam);
 
         const dateObj = new Date(date);
         dateObj.setHours(0, 0, 0, 0);
 
+        // Build query
         const query = {
-            subject: subjectId,
-            attendanceDate: dateObj,
-            department: department
+            attendanceDate: dateObj
         };
-
+        
+        if (subjectId) query.subject = subjectId;
         if (sectionId) query.sectionId = sectionId;
+
+        // If no specific sectionId, we must filter by department via sections lookup
+        if (!sectionId && resolvedDeptId) {
+            const sections = await mongoose.model('Section').find({ departmentId: resolvedDeptId });
+            query.sectionId = { $in: sections.map(s => s._id) };
+        } else if (!sectionId) {
+            // Legacy fallback
+            query.department = department;
+        }
 
         const records = await Attendance.find(query)
             .populate({
@@ -624,6 +642,7 @@ async function getDepartmentDailySummary(req, res) {
         const { date, department: deptParam } = req.query;
         if (!date || !deptParam) return res.status(400).json({ message: 'Date and department are required' });
 
+        const resolvedDeptId = await resolveDeptId(deptParam);
         const department = await resolveDeptCode(deptParam);
 
         const start = new Date(date);
@@ -631,9 +650,22 @@ async function getDepartmentDailySummary(req, res) {
         const end = new Date(date);
         end.setHours(23, 59, 59, 999);
 
-        // Aggregate unique student status per day (Priority: Present > On-duty > Absent)
         const summary = await Attendance.aggregate([
-            { $match: { department, attendanceDate: { $gte: start, $lte: end } } },
+            { $match: { attendanceDate: { $gte: start, $lte: end } } },
+            {
+                $lookup: {
+                    from: 'sections',
+                    localField: 'sectionId',
+                    foreignField: '_id',
+                    as: 'section'
+                }
+            },
+            { $unwind: '$section' },
+            // Robust Filter
+            ...(resolvedDeptId 
+                ? [{ $match: { 'section.departmentId': resolvedDeptId } }]
+                : [{ $match: { department: department } }]
+            ),
             {
                 $addFields: {
                     priority: {
@@ -653,21 +685,13 @@ async function getDepartmentDailySummary(req, res) {
                 $group: {
                     _id: { student: '$student', date: '$attendanceDate' },
                     status: { $first: '$status' },
-                    sectionId: { $first: '$sectionId' }
+                    sectionId: { $first: '$sectionId' },
+                    sectionInfo: { $first: '$section' }
                 }
             },
-            {
-                $lookup: {
-                    from: 'sections',
-                    localField: 'sectionId',
-                    foreignField: '_id',
-                    as: 'section'
-                }
-            },
-            { $unwind: '$section' },
             {
                 $group: {
-                    _id: { sectionId: '$sectionId', year: '$section.year', name: '$section.name' },
+                    _id: { sectionId: '$sectionId', year: '$sectionInfo.year', name: '$sectionInfo.name' },
                     totalPresent: { $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] } },
                     totalAbsent: { $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] } },
                     totalOD: { $sum: { $cond: [{ $eq: ['$status', 'On-duty'] }, 1, 0] } }
