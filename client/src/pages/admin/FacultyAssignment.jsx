@@ -280,8 +280,8 @@ const FacultyAssignment = () => {
                                 <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Section</label>
                                 <select name="sectionId" className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
                                     value={formData.sectionId} onChange={handleChange} required
-                                    disabled={!selectedDept && !selectedStudentYear}>
-                                    <option value="">Select Section</option>
+                                    disabled={!selectedDept}>
+                                    <option value="">{selectedDept ? 'Select Section' : 'Select Department First'}</option>
                                     {getFilteredSections().map(s => (
                                         <option key={s._id} value={s._id}>
                                             {s.name} ({s.batch})
@@ -294,7 +294,7 @@ const FacultyAssignment = () => {
                                 <select name="subjectId" className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
                                     value={formData.subjectId} onChange={handleChange} required
                                     disabled={!selectedDept}>
-                                    <option value="">Select Subject</option>
+                                    <option value="">{selectedDept ? 'Select Subject' : 'Select Department First'}</option>
                                     {getFilteredSubjects().map(s => (
                                         <option key={s._id} value={s._id}>
                                             {s.name} ({s.code})
