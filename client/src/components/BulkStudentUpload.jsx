@@ -48,20 +48,20 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
             // Define standard system fields immediately
             setAvailableFields([
                 { key: 'name', label: 'Student Name', required: true },
-                { key: 'email', label: 'Email Address', required: true },
                 { key: 'registerNumber', label: 'Register Number', required: true },
-                { key: 'rollNumber', label: 'Roll Number', required: false },
+                { key: 'rollNumber', label: 'Roll Number', required: true },
                 { key: 'department', label: 'Department', required: true },
-                { key: 'section', label: 'Section', required: false },
+                { key: 'section', label: 'Section', required: true },
                 { key: 'batch', label: `Batch (e.g. ${getActiveBatches()[0] || '2023-2027'})`, required: true },
-                { key: 'gender', label: 'Gender (Male/Female/Other)', required: true },
+                { key: 'dob', label: 'Date of Birth (YYYY-MM-DD)', required: true },
+                { key: 'email', label: 'Email Address', required: false },
+                { key: 'gender', label: 'Gender (Male/Female/Other)', required: false },
                 { key: 'contactNumber', label: 'Contact Number', required: false },
                 { key: 'whatsappNumber', label: 'WhatsApp Number', required: false },
                 { key: 'bloodGroup', label: 'Blood Group', required: false },
                 { key: 'address', label: 'Address', required: false },
                 { key: 'guardianName', label: 'Guardian Name', required: false },
-                { key: 'guardianContact', label: 'Guardian Contact', required: false },
-                { key: 'dob', label: 'Date of Birth (YYYY-MM-DD)', required: true }
+                { key: 'guardianContact', label: 'Guardian Contact', required: false }
             ]);
         } else {
             resetState();
@@ -141,17 +141,33 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
                 setRawHeaders(fileHeaders);
                 setRawRows(rows);
 
-                // Auto-map based on exact or approximate matches
+                // Auto-map based on exact or approximate matches (Improved)
                 const initialMapping = {};
                 fileHeaders.forEach(header => {
-                    const lowerHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    const match = availableFields.find(f => {
+                    const cleanHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    
+                    // Priority 1: Exact key or label match
+                    const exactMatch = availableFields.find(f => 
+                        f.key.toLowerCase() === cleanHeader || 
+                        f.label.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanHeader
+                    );
+
+                    if (exactMatch) {
+                        initialMapping[header] = exactMatch.key;
+                        return;
+                    }
+
+                    // Priority 2: Partial matches
+                    const partialMatch = availableFields.find(f => {
                         const lowerKey = f.key.toLowerCase();
                         const lowerLabel = f.label.toLowerCase().replace(/[^a-z0-9]/g, '');
-                        return lowerKey === lowerHeader || lowerLabel === lowerHeader || lowerHeader.includes(lowerKey);
+                        return cleanHeader.includes(lowerKey) || 
+                               lowerKey.includes(cleanHeader) || 
+                               cleanHeader.includes(lowerLabel.replace('student', '').trim())
                     });
-                    if (match) {
-                        initialMapping[header] = match.key;
+
+                    if (partialMatch) {
+                        initialMapping[header] = partialMatch.key;
                     }
                 });
 
@@ -215,18 +231,22 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
             const deptNames = knownDepartments.map(d => d.name.toLowerCase());
             const unknownDepts = new Set();
 
-            processedData.forEach(row => {
+            processedData.forEach((row, i) => {
                 if (row.department) {
                     const trimmedDept = String(row.department).toLowerCase();
                     if (!deptNames.includes(trimmedDept)) {
                         unknownDepts.add(row.department);
                     }
                 } else {
-                    warnings.push("Some rows are missing Department");
+                    warnings.push(`Record ${i+1}: Missing Department`);
                 }
 
-                if (!row.name) warnings.push("Some rows are missing Name");
-                if (!row.email) warnings.push("Some rows are missing Email");
+                if (!row.name) warnings.push(`Record ${i+1}: Missing Student Name`);
+                if (!row.registerNumber) warnings.push(`Record ${i+1}: Missing Register Number`);
+                if (!row.rollNumber) warnings.push(`Record ${i+1}: Missing Roll Number`);
+                if (!row.dob) warnings.push(`Record ${i+1}: Missing Date of Birth`);
+                if (!row.section) warnings.push(`Record ${i+1}: Missing Section`);
+                if (!row.batch) warnings.push(`Record ${i+1}: Missing Batch`);
             });
 
             if (unknownDepts.size > 0) {
@@ -282,7 +302,15 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
 
     if (!isOpen) return null;
 
-    const hasCriticalErrors = validationWarnings.some(w => w.includes("missing Name") || w.includes("missing Email") || w.includes("missing Register"));
+    const hasCriticalErrors = validationWarnings.some(w => 
+        w.toLowerCase().includes("missing student name") || 
+        w.toLowerCase().includes("missing register number") || 
+        w.toLowerCase().includes("missing roll number") || 
+        w.toLowerCase().includes("missing department") ||
+        w.toLowerCase().includes("missing section") ||
+        w.toLowerCase().includes("missing batch") ||
+        w.toLowerCase().includes("missing date of birth")
+    );
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">

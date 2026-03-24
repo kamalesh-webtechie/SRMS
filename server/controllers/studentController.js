@@ -375,8 +375,21 @@ const bulkUploadStudents = async (req, res) => {
                     data.department = data.department ? String(data.department).trim() : '';
                     data.section = data.section ? String(data.section).trim() : '';
 
-                    if (!data.email || !data.registerNumber) {
-                        return { error: `Row ${rowIndex}: Missing Email (${data.email || 'N/A'}) or Register Number (${data.registerNumber || 'N/A'}).` };
+                    if (!data.registerNumber || !data.name || !data.rollNumber || !data.dob || !data.department || !data.section || !data.batch) {
+                        const missing = [];
+                        if (!data.name) missing.push('Name');
+                        if (!data.registerNumber) missing.push('Register Number');
+                        if (!data.rollNumber) missing.push('Roll Number');
+                        if (!data.dob) missing.push('Date of Birth');
+                        if (!data.department) missing.push('Department');
+                        if (!data.section) missing.push('Section');
+                        if (!data.batch) missing.push('Batch');
+                        return { error: `Row ${rowIndex}: Missing mandatory fields: ${missing.join(', ')}` };
+                    }
+
+                    // Auto-generate email if missing
+                    if (!data.email) {
+                        data.email = `${data.registerNumber.toLowerCase()}@srms.edu`;
                     }
 
                     // Validation Lookups
