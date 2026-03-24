@@ -209,7 +209,9 @@ const verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
 
-        const user = await User.findOne({ email }).select('+otp +otpExpires');
+        const user = await User.findOne({
+            $or: [{ email: email }, { username: email }]
+        }).select('+otp +otpExpires');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -260,7 +262,9 @@ const resendOTP = async (req, res) => {
 
         const { email } = req.body;
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            $or: [{ email: email }, { username: email }]
+        });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });

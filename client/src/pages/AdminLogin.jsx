@@ -38,6 +38,7 @@ const AdminLogin = () => {
             const userData = await login(email, password);
 
             if (userData.otpRequired) {
+                setEmail(userData.email); // Sync email state with actual email from backend
                 setStep('otp');
                 setResendTimer(30); // Start 30s timer
                 setLoading(false);
