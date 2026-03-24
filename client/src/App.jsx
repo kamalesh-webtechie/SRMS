@@ -82,6 +82,7 @@ const PublicOnlyRoute = ({ children }) => {
 const TimeTableDispatcher = () => {
   const { user } = useAuth();
   if (user.role === 'admin' || user.role === 'hod') return <TimeTableManagement />;
+  if (user.role === 'faculty') return <FacultyTimeTable />;
   if (user.role === 'student') return <StudentTimeTable />;
   return <Navigate to="/dashboard" />;
 }

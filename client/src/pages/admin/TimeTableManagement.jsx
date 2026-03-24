@@ -651,12 +651,6 @@ const TimeTableManagement = () => {
                     </div>
                 </div>
             )}
-            <AddFacultyModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                onFacultyAdded={fetchFaculty}
-                editingFaculty={editingFaculty}
-            />
             
             {showBulkModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-fade-in">
