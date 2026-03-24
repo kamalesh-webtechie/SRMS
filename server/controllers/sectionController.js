@@ -1,5 +1,20 @@
 const Section = require('../models/Section');
 const Department = require('../models/Department');
+const mongoose = require('mongoose');
+
+// Helper to resolve department name/ID/code to ObjectId
+const resolveDeptId = async (param) => {
+    if (!param || param === 'undefined') return null;
+    if (mongoose.Types.ObjectId.isValid(param)) return new mongoose.Types.ObjectId(param);
+    
+    const dept = await Department.findOne({
+        $or: [
+            { name: new RegExp(`^${param}$`, 'i') },
+            { code: new RegExp(`^${param}$`, 'i') }
+        ]
+    });
+    return dept ? dept._id : null;
+};
 
 const createSection = async (req, res) => {
     try {
@@ -50,8 +65,17 @@ const getSections = async (req, res) => {
 
 const getSectionsByDepartment = async (req, res) => {
     try {
-        const { departmentId, semester } = req.params;
-        const query = { departmentId };
+        const { departmentId: deptParam, semester } = req.params;
+        const resolvedId = await resolveDeptId(deptParam);
+        
+        let query;
+        if (resolvedId) {
+            query = { departmentId: resolvedId };
+        } else {
+            // Fallback for legacy data if resolution fails
+            query = { department: new RegExp(`^${deptParam}$`, 'i') };
+        }
+
         if (semester) query.semester = semester;
 
         const sections = await Section.find(query).sort({ name: 1 });

@@ -4,6 +4,21 @@ const TeachingAssignment = require('../models/TeachingAssignment');
 const FacultyProfile = require('../models/FacultyProfile');
 const StudentProfile = require('../models/StudentProfile');
 const Section = require('../models/Section');
+const Department = require('../models/Department');
+
+// Helper to resolve department name/ID/code to ObjectId
+const resolveDeptId = async (param) => {
+    if (!param || param === 'undefined') return null;
+    if (mongoose.Types.ObjectId.isValid(param)) return new mongoose.Types.ObjectId(param);
+    
+    const dept = await Department.findOne({
+        $or: [
+            { name: new RegExp(`^${param}$`, 'i') },
+            { code: new RegExp(`^${param}$`, 'i') }
+        ]
+    });
+    return dept ? dept._id : null;
+};
 const logAction = require('../utils/logger');
 
 // @desc    Get assigned subjects and sections for faculty
@@ -160,7 +175,14 @@ const getAdminMarksView = async (req, res) => {
         }
 
         if (req.user && req.user.role === 'hod') {
-            const sections = await Section.find({ departmentId: req.user.departmentId });
+            const resolvedDeptId = await resolveDeptId(req.user.departmentId);
+            const sections = await Section.find({ 
+                $or: [
+                    { departmentId: resolvedDeptId },
+                    // Fallback to name match if ID fetch is inconclusive
+                    { department: new RegExp(`^${req.user.department}$`, 'i') }
+                ]
+            });
             const sectionIds = sections.map(s => s._id.toString());
             // If sectionId was provided, ensure it belongs to HOD's department
             if (query.sectionId && !sectionIds.includes(query.sectionId.toString())) {
