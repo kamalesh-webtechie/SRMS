@@ -66,7 +66,7 @@ const loginUser = async (req, res) => {
 
             if (user.role === 'admin') {
                 // Global Check AND User Preference Check
-                const isGlobalEmailEnabled = settings.securitySettings?.twoFactorSettings?.emailOtp !== false;
+                const isGlobalEmailEnabled = false; // TEMPORARILY DISABLED AS PER USER REQUEST
                 const isUserEmailEnabled = user.securityPreferences?.emailOtpEnabled !== false;
 
                 if (isGlobalEmailEnabled && isUserEmailEnabled) {
