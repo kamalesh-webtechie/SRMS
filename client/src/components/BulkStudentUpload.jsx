@@ -11,7 +11,8 @@ import {
     Bot,
     AlertTriangle,
     Download,
-    FileSpreadsheet
+    FileSpreadsheet,
+    RotateCcw
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../services/api';
@@ -249,15 +250,18 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
         try {
             const { data } = await api.post('/students/bulk', parsedData);
 
-            const hasErrors = data.errors && data.errors.length > 0;
-            const createdCount = parseInt(data.message.match(/Created: (\d+)/)?.[1] || "0");
+            const createdCount = data.createdCount || 0;
+            const errorCount = data.errorCount || 0;
+            const hasErrors = errorCount > 0;
 
             setResult({
                 success: !hasErrors && createdCount > 0,
                 message: data.message,
                 errors: data.errors,
                 isPartial: hasErrors && createdCount > 0,
-                isTotalFailure: hasErrors && createdCount === 0
+                isTotalFailure: hasErrors && createdCount === 0,
+                createdCount,
+                errorCount
             });
 
             if (!hasErrors && createdCount > 0) {
@@ -298,7 +302,7 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-8">
-                    {!result || (result && !result.success && !result.isPartial) ? (
+                    {!result ? (
                         <div className="space-y-8">
                             {/* Step 1: Upload & Instructions */}
                             {!isMappingStage && parsedData.length === 0 && (
@@ -491,60 +495,89 @@ const BulkStudentUpload = ({ isOpen, onClose, onUploadSuccess }) => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col h-full animate-in zoom-in-95 duration-300">
+                            {/* Result Summary Bar */}
+                            <div className={clsx(
+                                "p-6 rounded-xl flex items-center gap-4 mb-8",
+                                result.success ? "bg-green-50 border border-green-100" :
+                                    result.isPartial ? "bg-orange-50 border border-orange-100" :
+                                        "bg-red-50 border border-red-100"
+                            )}>
+                                <div className={clsx(
+                                    "p-3 rounded-full",
+                                    result.success ? "bg-green-100" :
+                                        result.isPartial ? "bg-orange-100" :
+                                            "bg-red-100"
+                                )}>
+                                    {result.success ? (
+                                        <CheckCircle className="h-8 w-8 text-green-600" />
+                                    ) : result.isPartial ? (
+                                        <AlertTriangle className="h-8 w-8 text-orange-600" />
+                                    ) : (
+                                        <AlertCircle className="h-8 w-8 text-red-600" />
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        {result.success ? "Import Successful!" :
+                                            result.isPartial ? "Partial Success" :
+                                                "Import Failed"}
+                                    </h3>
+                                    <p className={clsx(
+                                        "text-sm font-medium",
+                                        result.success ? "text-green-700" :
+                                            result.isPartial ? "text-orange-700" :
+                                                "text-red-700"
+                                    )}>
+                                        {result.createdCount || 0} students created. {result.errorCount || 0} rows failed.
+                                    </p>
+                                </div>
+                            </div>
 
-                            {result && !result.success && !result.isPartial && result.message !== "Missing required mappings" && (
-                                <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
-                                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <h4 className="text-sm font-bold text-red-800">{result.isTotalFailure ? "All Records Failed" : "Upload Failed"}</h4>
-                                        <p className="text-sm text-red-700 mt-1">{result.message}</p>
-                                        {result.errors && (
-                                            <ul className="mt-2 space-y-1 text-xs text-red-600 list-disc list-inside max-h-32 overflow-y-auto">
-                                                {result.errors.map((err, i) => <li key={i}>{err}</li>)}
-                                            </ul>
-                                        )}
+                            {/* Detailed Errors Section */}
+                            {result.errors && result.errors.length > 0 && (
+                                <div className="flex-1 overflow-hidden flex flex-col">
+                                    <div className="flex items-center justify-between mb-3 px-1">
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                            <AlertCircle className="h-3 w-3" /> Failed Records Detail
+                                        </h4>
+                                        <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                                            {result.errors.length} Errors
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 bg-gray-50 rounded-xl border border-gray-200 overflow-y-auto p-4 custom-scrollbar">
+                                        <ul className="space-y-2.5">
+                                            {result.errors.map((err, i) => (
+                                                <li key={i} className="flex gap-3 text-sm text-red-700 bg-white p-3 rounded-lg border-l-4 border-red-500 shadow-sm animate-in slide-in-from-left duration-200" style={{ animationDelay: `${i * 50}ms` }}>
+                                                    <span className="font-bold shrink-0">#{i + 1}</span>
+                                                    <span className="opacity-90 leading-relaxed font-medium">{err}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="mt-4 p-4 rounded-lg bg-indigo-50 border border-indigo-100 text-xs text-indigo-700 flex gap-2">
+                                        <Info className="h-4 w-4 shrink-0" />
+                                        <p>
+                                            <strong>Tip:</strong> Download the failed rows as a new CSV, fix the errors, and upload again. 
+                                            Only students who were not created should be included in the re-upload.
+                                        </p>
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full space-y-6 py-12 animate-in zoom-in-50">
-                            <div className={clsx(
-                                "p-6 rounded-full",
-                                result.isPartial ? "bg-orange-100" : "bg-green-100"
-                            )}>
-                                {result.isPartial ? (
-                                    <AlertTriangle className="h-12 w-12 text-orange-600" />
-                                ) : (
-                                    <CheckCircle className="h-12 w-12 text-green-600" />
-                                )}
-                            </div>
-                            <div className="text-center max-w-md">
-                                <h3 className="text-2xl font-bold text-gray-900">
-                                    {result.isPartial ? "Partial Success" : "Import Successful!"}
-                                </h3>
-                                <p className="text-gray-500 mt-2">{result.message}</p>
 
-                                {result.errors && result.errors.length > 0 && (
-                                    <div className="mt-6 text-left">
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Error Details</h4>
-                                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 max-h-48 overflow-y-auto">
-                                            <ul className="space-y-1.5 text-xs text-red-600 list-disc list-inside">
-                                                {result.errors.map((err, i) => <li key={i}>{err}</li>)}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {result.isPartial && (
+                            {!result.success && (
+                                <div className="mt-8 flex justify-center">
                                     <button
                                         onClick={() => setResult(null)}
-                                        className="mt-8 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                                        className="inline-flex items-center px-6 py-3 bg-white border border-gray-300 shadow-sm text-sm font-bold text-gray-700 rounded-xl hover:bg-gray-50 transition-all active:scale-95"
                                     >
-                                        Back to Upload
+                                        <RotateCcw className="h-4 w-4 mr-2" />
+                                        Try Upload Again
                                     </button>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

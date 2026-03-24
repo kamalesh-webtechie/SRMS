@@ -20,8 +20,12 @@ const StudentProfile = () => {
         bloodGroup: '',
         address: '',
         whatsappNumber: '',
+        contactNumber: '',
+        guardianName: '',
+        guardianContact: '',
         dob: '',
-        profilePhoto: ''
+        profilePhoto: '',
+        email: ''
     });
 
     const [message, setMessage] = useState(null);
@@ -37,8 +41,12 @@ const StudentProfile = () => {
                         bloodGroup: meRes.data.profile.bloodGroup || '',
                         address: meRes.data.profile.address || '',
                         whatsappNumber: meRes.data.profile.whatsappNumber || '',
+                        contactNumber: meRes.data.profile.contactNumber || '',
+                        guardianName: meRes.data.profile.guardianName || '',
+                        guardianContact: meRes.data.profile.guardianContact || '',
                         dob: meRes.data.profile.dob ? new Date(meRes.data.profile.dob).toISOString().split('T')[0] : '',
-                        profilePhoto: meRes.data.profile.profilePhotoUrl || meRes.data.profile.profilePhoto || ''
+                        profilePhoto: meRes.data.profile.profilePhotoUrl || meRes.data.profile.profilePhoto || '',
+                        email: meRes.data.profile.email || ''
                     });
                 }
             } catch (error) {
@@ -280,14 +288,57 @@ const StudentProfile = () => {
 
                             <div className="col-span-1">
                                 <label className="block text-sm font-semibold text-gray-700 mb-2 px-1">
+                                    <Phone className="inline w-4 h-4 mr-1 text-gray-400" /> Contact Number
+                                </label>
+                                <input
+                                    type="text"
+                                    name="contactNumber"
+                                    value={editableData.contactNumber}
+                                    onChange={handleChange}
+                                    placeholder="Your primary phone number"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="col-span-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 px-1">
                                     <Mail className="inline w-4 h-4 mr-1 text-gray-400" /> Personal Email (Optional)
                                 </label>
                                 <input
                                     type="email"
                                     name="email"
-                                    value={editableData.email || ''} // Handle override if exists
+                                    value={editableData.email}
                                     onChange={handleChange}
                                     placeholder="personal@gmail.com"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Guardian Details */}
+                            <div className="col-span-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 px-1">
+                                    <User className="inline w-4 h-4 mr-1 text-gray-400" /> Guardian Name
+                                </label>
+                                <input
+                                    type="text"
+                                    name="guardianName"
+                                    value={editableData.guardianName}
+                                    onChange={handleChange}
+                                    placeholder="Parent/Guardian Name"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="col-span-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 px-1">
+                                    <Phone className="inline w-4 h-4 mr-1 text-gray-400" /> Guardian Contact
+                                </label>
+                                <input
+                                    type="text"
+                                    name="guardianContact"
+                                    value={editableData.guardianContact}
+                                    onChange={handleChange}
+                                    placeholder="Parent/Guardian Contact"
                                     className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary focus:outline-none"
                                 />
                             </div>

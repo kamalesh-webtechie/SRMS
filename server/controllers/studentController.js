@@ -284,14 +284,20 @@ const updateStudentProfile = async (req, res) => {
             return res.status(404).json({ message: 'Student profile not found' });
         }
 
-        const { address, bloodGroup, dob, profilePhoto, email, whatsappNumber } = req.body;
+        const { 
+            address, bloodGroup, dob, profilePhoto, email, 
+            whatsappNumber, contactNumber, guardianName, guardianContact 
+        } = req.body;
 
-        if (address) student.address = address;
-        if (bloodGroup) student.bloodGroup = bloodGroup;
-        if (dob) student.dob = dob;
-        if (profilePhoto) student.profilePhoto = profilePhoto;
-        if (email) student.email = email;
-        if (whatsappNumber) student.whatsappNumber = whatsappNumber;
+        if (address !== undefined) student.address = address;
+        if (bloodGroup !== undefined) student.bloodGroup = bloodGroup;
+        if (dob !== undefined) student.dob = dob;
+        if (profilePhoto !== undefined) student.profilePhoto = profilePhoto;
+        if (email !== undefined) student.email = email;
+        if (whatsappNumber !== undefined) student.whatsappNumber = whatsappNumber;
+        if (contactNumber !== undefined) student.contactNumber = contactNumber;
+        if (guardianName !== undefined) student.guardianName = guardianName;
+        if (guardianContact !== undefined) student.guardianContact = guardianContact;
 
         await student.save();
         res.status(200).json(student);
@@ -306,126 +312,167 @@ const updateStudentProfile = async (req, res) => {
 // @route   POST /api/students/bulk
 // @access  Private/Admin
 const bulkUploadStudents = async (req, res) => {
-    console.log(`Starting bulk upload for ${req.body?.length} students...`);
+    const studentsData = req.body;
+    console.log(`Starting optimized bulk upload for ${studentsData?.length} students...`);
     console.time('bulkUpload');
+    
+    if (!Array.isArray(studentsData)) {
+        console.timeEnd('bulkUpload');
+        return res.status(400).json({ message: 'Invalid data format. Expected array.' });
+    }
+
     let createdCount = 0;
     let errors = [];
 
     try {
-        const studentsData = req.body;
+        // 1. Pre-fetch ALL Departments and Sections for fast memory lookup
+        const [allDepts, allSections] = await Promise.all([
+            Department.find({}).lean(),
+            Section.find({ isActive: true }).lean()
+        ]);
 
-        if (!Array.isArray(studentsData)) {
-            console.timeEnd('bulkUpload');
-            return res.status(400).json({ message: 'Invalid data format. Expected array.' });
-        }
+        console.log(`Pre-fetched ${allDepts.length} departments and ${allSections.length} active sections.`);
 
-        for (let i = 0; i < studentsData.length; i++) {
-            const data = studentsData[i];
-            try {
-                if (i % 50 === 0) console.log(`Processing student ${i + 1}/${studentsData.length}...`);
+        // Helper to find department by name or code (extremely lenient)
+        const findDept = (input) => {
+            if (!input) return null;
+            const normalized = String(input).trim().toLowerCase();
+            return allDepts.find(d => 
+                d.name.toLowerCase() === normalized || 
+                (d.code && d.code.toLowerCase() === normalized) ||
+                normalized.includes(d.name.toLowerCase()) ||
+                d.name.toLowerCase().includes(normalized)
+            );
+        };
 
-                // Normalize and trim all input data
-                data.email = data.email ? String(data.email).trim() : '';
-                data.name = data.name ? String(data.name).trim() : '';
-                data.registerNumber = data.registerNumber ? String(data.registerNumber).trim() : '';
-                data.batch = data.batch ? String(data.batch).trim() : '';
-                data.department = data.department ? String(data.department).trim() : '';
-                data.section = data.section ? String(data.section).trim() : '';
+        // Helper to find section (lenient with batch format)
+        const findSection = (deptId, batch, name) => {
+            if (!deptId || !batch || !name) return null;
+            const normalizedName = String(name).trim().toLowerCase();
+            const normalizedBatch = String(batch).trim().replace(/\s/g, '').toLowerCase(); // Remove all spaces
+            
+            return allSections.find(s => {
+                const sBatch = s.batch.replace(/\s/g, '').toLowerCase();
+                return s.departmentId.toString() === deptId.toString() && 
+                       sBatch === normalizedBatch && 
+                       s.name.toLowerCase() === normalizedName;
+            });
+        };
 
-                if (!data.email || !data.registerNumber) {
-                    errors.push(`Row ${i + 1} missing required Email or Register Number.`);
-                    continue;
-                }
-
-                // Check duplicate email
-                const exists = await User.findOne({ email: data.email });
-                if (exists) {
-                    errors.push(`Email ${data.email} already exists`);
-                    continue;
-                }
-
-                // Find Department (Case-insensitive)
-                const deptName = data.department;
-                const dept = await Department.findOne({
-                    name: { $regex: new RegExp(`^${deptName}$`, 'i') }
-                });
-
-                if (!dept) {
-                    errors.push(`Department '${data.department}' not found for ${data.name || data.email}.`);
-                    continue;
-                }
-
-                // Find Section (Case-insensitive)
-                const sectionName = data.section;
-                const section = await Section.findOne({
-                    departmentId: dept._id,
-                    batch: data.batch,
-                    name: { $regex: new RegExp(`^${sectionName}$`, 'i') }
-                });
-
-                if (!section) {
-                    errors.push(`Section '${data.section}' in batch '${data.batch}' not found for department '${dept.name}'`);
-                    continue;
-                }
-
-                // Password Generation Logic for Bulk
-                let password = 'password123';
-                if (data.dob) {
-                    try {
-                        const dateObj = new Date(data.dob);
-                        if (!isNaN(dateObj.getTime())) {
-                            const d = String(dateObj.getDate()).padStart(2, '0');
-                            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                            const y = dateObj.getFullYear();
-                            password = `${d}${m}${y}`;
-                        }
-                    } catch (e) { }
-                }
-
-                const user = await User.create({
-                    name: data.name,
-                    email: data.email,
-                    password: password,
-                    role: 'student',
-                    username: data.registerNumber
-                });
-
+        // 2. Process students in parallel chunks
+        const CHUNK_SIZE = 10;
+        for (let i = 0; i < studentsData.length; i += CHUNK_SIZE) {
+            const chunk = studentsData.slice(i, i + CHUNK_SIZE);
+            
+            const chunkPromises = chunk.map(async (data, index) => {
+                const rowIndex = i + index + 1;
                 try {
-                    // Extract and normalize gender
-                    let normalizedGender = 'Other';
-                    const inputGender = data.gender ? String(data.gender).trim().toLowerCase() : '';
-                    if (['male', 'm'].includes(inputGender)) normalizedGender = 'Male';
-                    else if (['female', 'f'].includes(inputGender)) normalizedGender = 'Female';
-                    else if (inputGender === 'other') normalizedGender = 'Other';
+                    // Normalize and trim
+                    data.email = data.email ? String(data.email).trim() : '';
+                    data.name = data.name ? String(data.name).trim() : '';
+                    data.registerNumber = data.registerNumber ? String(data.registerNumber).trim() : '';
+                    data.batch = data.batch ? String(data.batch).trim() : '';
+                    data.department = data.department ? String(data.department).trim() : '';
+                    data.section = data.section ? String(data.section).trim() : '';
 
-                    await StudentProfile.create({
-                        user: user._id,
-                        registerNumber: data.registerNumber,
-                        rollNumber: data.rollNumber,
-                        department: dept.name,
-                        semester: section.semester,
-                        sectionId: section._id,
-                        batch: data.batch,
-                        contactNumber: data.contactNumber,
-                        dob: data.dob,
-                        gender: normalizedGender,
-                        currentYear: section.year || 'I',
-                        whatsappNumber: data.whatsappNumber ? String(data.whatsappNumber).trim() : '',
-                        address: data.address ? String(data.address).trim() : '',
-                        bloodGroup: data.bloodGroup ? String(data.bloodGroup).trim() : '',
-                        guardianName: data.guardianName ? String(data.guardianName).trim() : '',
-                        guardianContact: data.guardianContact ? String(data.guardianContact).trim() : '',
+                    if (!data.email || !data.registerNumber) {
+                        return { error: `Row ${rowIndex}: Missing Email (${data.email || 'N/A'}) or Register Number (${data.registerNumber || 'N/A'}).` };
+                    }
+
+                    // Validation Lookups
+                    const dept = findDept(data.department);
+                    if (!dept) {
+                        const available = allDepts.map(d => `${d.name} (${d.code || 'No Code'})`).join(', ');
+                        return { error: `Row ${rowIndex}: Department '${data.department}' not found. Available: [${available}]` };
+                    }
+
+                    const section = findSection(dept._id, data.batch, data.section);
+                    if (!section) {
+                        const deptSections = allSections.filter(s => s.departmentId.toString() === dept._id.toString());
+                        const availableSections = deptSections.map(s => `${s.name} in ${s.batch}`).join(', ');
+                        return { error: `Row ${rowIndex}: Section '${data.section}' for batch '${data.batch}' not found in ${dept.name}. Available for this dept: [${availableSections || 'None'}]` };
+                    }
+
+                    // Check duplicate email or register number (username)
+                    const existingUser = await User.findOne({ 
+                        $or: [
+                            { email: data.email },
+                            { username: data.registerNumber }
+                        ] 
                     });
-                    createdCount++;
-                } catch (profileError) {
-                    // Rollback user creation if profile fails
-                    await User.findByIdAndDelete(user._id);
-                    throw profileError;
+                    
+                    if (existingUser) {
+                        const conflict = existingUser.email === data.email ? 'Email' : 'Register Number';
+                        return { error: `Row ${rowIndex}: ${conflict} already exists for another user.` };
+                    }
+
+                    // Password Generation
+                    let password = 'password123';
+                    if (data.dob) {
+                        try {
+                            const dateObj = new Date(data.dob);
+                            if (!isNaN(dateObj.getTime())) {
+                                const d = String(dateObj.getDate()).padStart(2, '0');
+                                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                const y = dateObj.getFullYear();
+                                password = `${d}${m}${y}`;
+                            }
+                        } catch (e) { }
+                    }
+
+                    // Create User
+                    const user = await User.create({
+                        name: data.name,
+                        email: data.email,
+                        password: password,
+                        role: 'student',
+                        username: data.registerNumber
+                    });
+
+                    try {
+                        let normalizedGender = 'Other';
+                        const inputGender = data.gender ? String(data.gender).trim().toLowerCase() : '';
+                        if (['male', 'm'].includes(inputGender)) normalizedGender = 'Male';
+                        else if (['female', 'f'].includes(inputGender)) normalizedGender = 'Female';
+
+                        await StudentProfile.create({
+                            user: user._id,
+                            registerNumber: data.registerNumber,
+                            rollNumber: data.rollNumber,
+                            department: dept.name,
+                            departmentId: dept._id,
+                            semester: section.semester,
+                            sectionId: section._id,
+                            batch: data.batch,
+                            contactNumber: data.contactNumber,
+                            dob: data.dob,
+                            gender: normalizedGender,
+                            currentYear: section.year || 'I',
+                            whatsappNumber: data.whatsappNumber ? String(data.whatsappNumber).trim() : '',
+                            address: data.address ? String(data.address).trim() : '',
+                            bloodGroup: data.bloodGroup ? String(data.bloodGroup).trim() : '',
+                            guardianName: data.guardianName ? String(data.guardianName).trim() : '',
+                            guardianContact: data.guardianContact ? String(data.guardianContact).trim() : '',
+                        });
+                        return { success: true };
+                    } catch (profileError) {
+                        await User.findByIdAndDelete(user._id);
+                        return { error: `Row ${rowIndex}: Profile error - ${profileError.message}` };
+                    }
+                } catch (err) {
+                    console.error(`Row ${rowIndex} error:`, err);
+                    return { error: `Row ${rowIndex}: Server error during processing.` };
                 }
-            } catch (err) {
-                console.error(`Error processing row ${i + 1} (${data.email || 'unknown'}):`, err.message);
-                errors.push(`Failed for ${data.email || 'unknown'}: ${err.message}`);
-            }
+            });
+
+            const chunkResults = await Promise.all(chunkPromises);
+            chunkResults.forEach(res => {
+                if (res.success) createdCount++;
+                if (res.error) {
+                    errors.push(res.error);
+                    console.warn(res.error);
+                }
+            });
         }
 
         // Audit Bulk Action
@@ -443,13 +490,16 @@ const bulkUploadStudents = async (req, res) => {
         }
 
         console.timeEnd('bulkUpload');
-        console.log(`Bulk upload complete. Created: ${createdCount}, Errors: ${errors.length}`);
-        res.status(200).json({ message: `Processed. Created: ${createdCount}. Errors: ${errors.length}`, errors });
+        console.log(`Optimized Bulk upload complete. Created: ${createdCount}, Errors: ${errors.length}`);
+        res.status(200).json({ 
+            message: `Processed. Created: ${createdCount}. Errors: ${errors.length}`, 
+            errors,
+            createdCount,
+            errorCount: errors.length
+        });
 
     } catch (error) {
-        if (typeof console.timeEnd === 'function') {
-            try { console.timeEnd('bulkUpload'); } catch (e) { }
-        }
+        console.timeEnd('bulkUpload');
         console.error('CRITICAL BULK UPLOAD ERROR:', error);
         res.status(500).json({ message: error.message || 'Server Error' });
     }
