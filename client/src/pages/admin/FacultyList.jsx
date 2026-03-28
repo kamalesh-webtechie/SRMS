@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Search, Mail, Edit, RotateCcw } from 'lucide-react';
 import api from '../../services/api';
 import AddFacultyModal from '../../components/AddFacultyModal';
@@ -32,29 +32,55 @@ const FacultyList = () => {
     }, [user]);
 
     const [undoStack, setUndoStack] = useState(null);
+    const pendingDeleteRef = useRef(null);
+
+    // Commit pending delete if component unmounts
+    useEffect(() => {
+        return () => {
+            if (pendingDeleteRef.current) {
+                const { id, timer } = pendingDeleteRef.current;
+                clearTimeout(timer);
+                api.delete(`/faculty/${id}`).catch(err => console.error("Unmount delete failed", err));
+            }
+        };
+    }, []);
 
     const handleDelete = async (id) => {
         const itemToDelete = faculty.find(f => f._id === id);
         if (!itemToDelete) return;
 
+        // 1. If there's already a pending delete, commit it IMMEDIATELY before starting a new one
+        if (pendingDeleteRef.current) {
+            const { id: prevId, timer } = pendingDeleteRef.current;
+            clearTimeout(timer);
+            try {
+                // Use a standard fetch or beacon if you want extra reliability on refresh,
+                // but for multiple-click bug, this is enough.
+                api.delete(`/faculty/${prevId}`).catch(e => console.error("Background delete failed", e));
+            } catch (err) {
+                console.error("Failed to commit previous delete", err);
+            }
+        }
+
         const originalData = [...faculty];
         // Immediate UI Update
         setFaculty(prev => prev.filter(f => f._id !== id));
 
-        // Clear existing undo
-        if (undoStack?.timer) clearTimeout(undoStack.timer);
-
         const timer = setTimeout(async () => {
             try {
-                setUndoStack(prev => ({ ...prev, syncing: true, message: `Permanently removing "${itemToDelete.user.name}"...` }));
+                setUndoStack(prev => prev ? ({ ...prev, syncing: true, message: `Permanently removing "${itemToDelete.user.name}"...` }) : null);
                 await api.delete(`/faculty/${id}`);
                 setUndoStack(null);
+                pendingDeleteRef.current = null;
             } catch (error) {
                 console.error("Failed to delete", error);
                 setFaculty(originalData);
                 setUndoStack(null);
+                pendingDeleteRef.current = null;
             }
         }, 3000);
+
+        pendingDeleteRef.current = { id, timer };
 
         setUndoStack({
             message: `Faculty "${itemToDelete.user.name}" removed.`,
@@ -63,6 +89,7 @@ const FacultyList = () => {
                 clearTimeout(timer);
                 setFaculty(originalData);
                 setUndoStack(null);
+                pendingDeleteRef.current = null;
             },
             timer
         });

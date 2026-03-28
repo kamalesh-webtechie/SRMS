@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Search, Mail, BookOpen, Edit, RotateCcw, XCircle, Users, Filter, CheckCircle } from 'lucide-react';
 import api, { getMediaUrl } from '../../services/api';
 import AddStudentModal from '../../components/AddStudentModal';
@@ -16,6 +16,18 @@ const StudentList = () => {
     const [editingStudent, setEditingStudent] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
     const [undoStack, setUndoStack] = useState(null);
+    const pendingDeleteRef = useRef(null);
+
+    // Commit pending delete if component unmounts
+    useEffect(() => {
+        return () => {
+            if (pendingDeleteRef.current) {
+                const { action, timer } = pendingDeleteRef.current;
+                clearTimeout(timer);
+                action().catch(err => console.error("Unmount background delete failed", err));
+            }
+        };
+    }, []);
     const [departments, setDepartments] = useState([]);
     const [sections, setSections] = useState([]);
     const [filters, setFilters] = useState({
@@ -29,22 +41,44 @@ const StudentList = () => {
         const studentToDelete = students.find(s => s._id === id);
         if (!studentToDelete) return;
 
+        // Commit existing pending delete before starting a new one
+        if (pendingDeleteRef.current) {
+            const { action, timer } = pendingDeleteRef.current;
+            clearTimeout(timer);
+            action().catch(e => console.error("Earlier delete commit failed", e));
+        }
+
         const originalStudents = [...students];
         setStudents(prev => prev.filter(s => s._id !== id));
         setSelectedIds(prev => prev.filter(sid => sid !== id));
 
-        if (undoStack?.timer) clearTimeout(undoStack.timer);
+        const deleteAction = async () => {
+            try {
+                await api.delete(`/students/${id}`);
+                pendingDeleteRef.current = null;
+            } catch (err) {
+                console.error("Delayed delete failed", err);
+                // Can't easily restore state here if it was a background commit from another delete,
+                // but for this specific component, we try:
+                setStudents(prev => [...prev, studentToDelete]);
+                pendingDeleteRef.current = null;
+            }
+        };
 
         const timer = setTimeout(async () => {
             try {
                 await api.delete(`/students/${id}`);
                 setUndoStack(null);
+                pendingDeleteRef.current = null;
             } catch (error) {
                 console.error("Failed to delete", error);
                 setStudents(originalStudents);
                 setUndoStack(null);
+                pendingDeleteRef.current = null;
             }
-        }, 10000);
+        }, 3000); // Reduced from 10s to 3s for better UX
+
+        pendingDeleteRef.current = { action: deleteAction, timer };
 
         setUndoStack({
             message: `Student "${studentToDelete.user.name}" deleted.`,
@@ -52,6 +86,7 @@ const StudentList = () => {
                 clearTimeout(timer);
                 setStudents(originalStudents);
                 setUndoStack(null);
+                pendingDeleteRef.current = null;
             },
             timer
         });
