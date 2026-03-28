@@ -57,10 +57,9 @@ const MarksManagement = () => {
         const fetchSections = async () => {
             setLoadingFilters(true);
             try {
-                const { data } = await api.get(`/sections/by-department/${selectedDeptId}`);
-                const matching = data.filter(s => s.semester === Number(semester));
-                setSections(matching);
-                if (matching.length > 0) setSelectedSectionId(matching[0]._id);
+                const { data } = await api.get(`/sections/by-department/${selectedDeptId}/${semester}`);
+                setSections(data);
+                if (data.length > 0) setSelectedSectionId(data[0]._id);
                 else setSelectedSectionId('');
             } catch (error) {
                 console.error("Failed to fetch sections", error);
@@ -76,7 +75,7 @@ const MarksManagement = () => {
         if (!selectedSectionId) return;
         setLoading(true);
         try {
-            const { data } = await api.get(`/academic/marks/admin-view?sectionId=${selectedSectionId}&semester=${semester}&examType=${examType}`);
+            const { data } = await api.get(`/marks/admin-view?sectionId=${selectedSectionId}&semester=${semester}&examType=${examType}`);
             setMarks(data);
         } catch (error) {
             console.error("Search failed", error);
@@ -88,7 +87,7 @@ const MarksManagement = () => {
     const handleForward = async (id) => {
         setActionLoading(id);
         try {
-            await api.put(`/academic/marks/${id}/forward`);
+            await api.put(`/marks/${id}/forward`);
             // Refresh list
             handleSearch();
         } catch (error) {
@@ -217,7 +216,7 @@ const MarksManagement = () => {
                                             {doc.isLocked ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
                                             {doc.isLocked ? 'LOCKED' : 'UNLOCKED'}
                                         </div>
-                                        {user?.role === 'hod' && doc.status === 'submitted_to_hod' && (
+                                        {(user?.role === 'hod' || user?.role === 'admin') && doc.status === 'submitted_to_hod' && (
                                             <button
                                                 onClick={() => handleForward(doc._id)}
                                                 disabled={actionLoading === doc._id}

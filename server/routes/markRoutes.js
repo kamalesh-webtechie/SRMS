@@ -22,6 +22,6 @@ router.get('/students/:sectionId', authorize('faculty', 'hod', 'admin'), getSect
 router.get('/admin-view', authorize('faculty', 'hod', 'admin'), getAdminMarksView);
 
 // HOD Routes
-router.put('/:id/forward', authorize('hod'), forwardMarksToAdmin);
+router.put('/:id/forward', authorize('hod', 'admin'), forwardMarksToAdmin);
 
 module.exports = router;

@@ -76,7 +76,7 @@ const getSectionsByDepartment = async (req, res) => {
             query = { department: new RegExp(`^${deptParam}$`, 'i') };
         }
 
-        if (semester) query.semester = semester;
+        if (semester) query.semester = Number(semester);
 
         const sections = await Section.find(query).sort({ name: 1 });
         res.json(sections);

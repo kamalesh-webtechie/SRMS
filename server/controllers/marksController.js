@@ -203,7 +203,11 @@ const getAdminMarksView = async (req, res) => {
         const marks = await Mark.find(query)
             .populate('subjectId', 'name code')
             .populate('facultyId', 'name')
-            .populate('records.studentId', 'registerNumber');
+            .populate({
+                path: 'records.studentId',
+                select: 'registerNumber user',
+                populate: { path: 'user', select: 'name' }
+            });
 
         res.status(200).json(marks);
     } catch (error) {
