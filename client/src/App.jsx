@@ -99,26 +99,10 @@ function App() {
                 <LandingPage />
               </PublicOnlyRoute>
             } />
-            <Route path="/login" element={
-              <PublicOnlyRoute>
-                <RoleSelection />
-              </PublicOnlyRoute>
-            } />
-            <Route path="/login/admin" element={
-              <PublicOnlyRoute>
-                <AdminLogin />
-              </PublicOnlyRoute>
-            } />
-            <Route path="/login/faculty" element={
-              <PublicOnlyRoute>
-                <FacultyLogin />
-              </PublicOnlyRoute>
-            } />
-            <Route path="/login/student" element={
-              <PublicOnlyRoute>
-                <StudentLogin />
-              </PublicOnlyRoute>
-            } />
+            <Route path="/login" element={<RoleSelection />} />
+            <Route path="/login/admin" element={<AdminLogin />} />
+            <Route path="/login/faculty" element={<FacultyLogin />} />
+            <Route path="/login/student" element={<StudentLogin />} />
 
             {/* Protected Dashboard Routes */}
             <Route path="/dashboard" element={
