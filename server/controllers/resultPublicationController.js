@@ -3,6 +3,7 @@ const Mark = require('../models/Mark');
 const Section = require('../models/Section');
 const Subject = require('../models/Subject');
 const logAction = require('../utils/logger');
+const { getSemestersFromYear } = require('../utils/academicUtils');
 
 // ... semToYear helpers ...
 

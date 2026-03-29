@@ -1,8 +1,8 @@
 const Section = require('../models/Section');
 const Department = require('../models/Department');
 const mongoose = require('mongoose');
+const { getYearFromSemester } = require('../utils/academicUtils');
 
-// Helper to resolve department name/ID/code to ObjectId
 const resolveDeptId = async (param) => {
     if (!param || param === 'undefined') return null;
     if (mongoose.Types.ObjectId.isValid(param)) return new mongoose.Types.ObjectId(param);
@@ -78,12 +78,7 @@ const getSectionsByDepartment = async (req, res) => {
 
         if (semester) {
             const semNum = Number(semester);
-            // Mapping semester to Year (I, II, III, IV)
-            let mappedYear = 'I';
-            if (semNum > 6) mappedYear = 'IV';
-            else if (semNum > 4) mappedYear = 'III';
-            else if (semNum > 2) mappedYear = 'II';
-            else mappedYear = 'I';
+            const mappedYear = getYearFromSemester(semNum);
 
             // Query by BOTH semester OR year for robust matching
             query.$or = [
