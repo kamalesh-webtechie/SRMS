@@ -76,9 +76,24 @@ const getSectionsByDepartment = async (req, res) => {
             query = { department: new RegExp(`^${deptParam}$`, 'i') };
         }
 
-        if (semester) query.semester = Number(semester);
+        if (semester) {
+            const semNum = Number(semester);
+            // Mapping semester to Year (I, II, III, IV)
+            let mappedYear = 'I';
+            if (semNum > 6) mappedYear = 'IV';
+            else if (semNum > 4) mappedYear = 'III';
+            else if (semNum > 2) mappedYear = 'II';
+            else mappedYear = 'I';
+
+            // Query by BOTH semester OR year for robust matching
+            query.$or = [
+                { semester: semNum },
+                { year: mappedYear }
+            ];
+        }
 
         const sections = await Section.find(query).sort({ name: 1 });
+        console.log(`Sections Search for Dept: ${deptParam}, Sem: ${semester} -> Found ${sections.length}`);
         res.json(sections);
     } catch (error) {
         res.status(500).json({ message: error.message });
