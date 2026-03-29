@@ -58,6 +58,7 @@ const MarksManagement = () => {
             setLoadingFilters(true);
             try {
                 const { data } = await api.get(`/sections/by-department/${selectedDeptId}/${semester}`);
+                console.log("Sections:", data);
                 setSections(data);
                 if (data.length > 0) setSelectedSectionId(data[0]._id);
                 else setSelectedSectionId('');
@@ -137,7 +138,7 @@ const MarksManagement = () => {
                         <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Semester</label>
                         <select
                             value={semester}
-                            onChange={(e) => setSemester(e.target.value)}
+                            onChange={(e) => setSemester(Number(e.target.value))}
                             className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
                         >
                             {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
@@ -154,10 +155,12 @@ const MarksManagement = () => {
                             disabled={loadingFilters || sections.length === 0}
                             className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow disabled:bg-gray-50 disabled:text-gray-500"
                         >
-                            {sections.length > 0 ? (
+                            {loadingFilters ? (
+                                <option value="">Loading...</option>
+                            ) : sections.length > 0 ? (
                                 sections.map(s => <option key={s._id} value={s._id}>{s.name}</option>)
                             ) : (
-                                <option value="">No sections found</option>
+                                <option value="">No sections available</option>
                             )}
                         </select>
                     </div>
