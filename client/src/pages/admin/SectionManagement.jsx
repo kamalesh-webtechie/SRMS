@@ -9,6 +9,7 @@ const SectionManagement = () => {
     const [sections, setSections] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingSections, setLoadingSections] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSection, setEditingSection] = useState(null);
     const [formData, setFormData] = useState({
@@ -20,13 +21,16 @@ const SectionManagement = () => {
     const [error, setError] = useState('');
 
     const fetchSections = async () => {
+        setLoadingSections(true);
         try {
             const { data } = await api.get('/sections');
+            console.log("Sections:", data);
             setSections(data);
         } catch (error) {
             console.error("Failed to fetch sections", error);
         } finally {
             setLoading(false);
+            setLoadingSections(false);
         }
     };
 
@@ -110,7 +114,11 @@ const SectionManagement = () => {
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ 
+            ...formData, 
+            [name]: name === 'semester' ? Number(value) : value 
+        });
     };
 
     // Helper for Start Year
@@ -312,6 +320,18 @@ const SectionManagement = () => {
                                             className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow uppercase font-bold"
                                             value={formData.name} onChange={handleChange} />
                                         <p className="mt-1 text-xs text-gray-500">Single letter identifier for the section</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Semester (Current Assignment)</label>
+                                        <select name="semester" required
+                                            className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
+                                            value={formData.semester} onChange={handleChange}>
+                                            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                                                <option key={s} value={s}>Semester {s}</option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-1 text-xs text-gray-500 italic">Sections appear in other modules based on this semester.</p>
                                     </div>
 
                                     <div>
