@@ -36,6 +36,7 @@ const AttendanceReports = () => {
     const [reportData, setReportData] = useState([]);
     const [dailySummaryData, setDailySummaryData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingSections, setLoadingSections] = useState(false);
 
     // Details Modal State
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -68,11 +69,15 @@ const AttendanceReports = () => {
     };
 
     const fetchSections = async () => {
+        setLoadingSections(true);
         try {
             const { data } = await api.get('/sections');
+            console.log("Sections:", data);
             setSections(data);
         } catch (error) {
             console.error("Failed to fetch sections", error);
+        } finally {
+            setLoadingSections(false);
         }
     };
 
@@ -277,16 +282,28 @@ const AttendanceReports = () => {
                             value={selectedSection}
                             onChange={(e) => setSelectedSection(e.target.value)}
                             className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
+                            disabled={loadingSections}
                         >
-                            <option value="">All Sections</option>
-                            {sections
-                                .filter(s =>
-                                    (!selectedDept || s.department === selectedDept || s.departmentId?.code === selectedDept || s.departmentId === selectedDept) &&
-                                    (!selectedYear || s.year === selectedYear)
-                                )
-                                .map(s => (
-                                    <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>
-                                ))}
+                            {loadingSections ? (
+                                <option value="">Loading...</option>
+                            ) : (
+                                <>
+                                    <option value="">All Sections</option>
+                                    {(() => {
+                                        const filtered = sections.filter(s =>
+                                            (!selectedDept || s.department === selectedDept || s.departmentId?.code === selectedDept || s.departmentId === selectedDept) &&
+                                            (!selectedYear || s.year === selectedYear)
+                                        );
+                                        return filtered.length > 0 ? (
+                                            filtered.map(s => (
+                                                <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No sections available</option>
+                                        );
+                                    })()}
+                                </>
+                            )}
                         </select>
                     </div>
                     <div>

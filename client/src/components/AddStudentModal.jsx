@@ -10,6 +10,7 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded, editingStudent }) =>
     const [error, setError] = useState('');
     const [departments, setDepartments] = useState([]);
     const [sections, setSections] = useState([]);
+    const [loadingSections, setLoadingSections] = useState(false);
     const [profilePhoto, setProfilePhoto] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -92,13 +93,17 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded, editingStudent }) =>
     useEffect(() => {
         const fetchSections = async () => {
             if (formData.departmentId) {
+                setLoadingSections(true);
                 try {
                     // Fetch all sections for the department
                     const { data } = await api.get(`/sections/by-department/${formData.departmentId}`);
+                    console.log("Sections:", data);
                     setSections(data);
                 } catch (e) {
                     console.error("Failed to fetch sections", e);
                     setSections([]);
+                } finally {
+                    setLoadingSections(false);
                 }
             } else {
                 setSections([]);
@@ -307,15 +312,25 @@ const AddStudentModal = ({ isOpen, onClose, onStudentAdded, editingStudent }) =>
                                             ))}
                                         </select>
                                     </div>
-                                    <div>
+                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-1.5 px-1 uppercase tracking-wider">Section</label>
                                         <select name="sectionId" required
                                             className="w-full border border-gray-300 rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-gray-50/30 transition-all font-medium text-gray-900 disabled:opacity-50"
-                                            value={formData.sectionId} onChange={handleChange} disabled={!formData.departmentId}>
-                                            <option value="">Select Section</option>
-                                            {sections.map(s => (
-                                                <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>
-                                            ))}
+                                            value={formData.sectionId} onChange={handleChange} disabled={!formData.departmentId || loadingSections}>
+                                            {loadingSections ? (
+                                                <option value="">Loading...</option>
+                                            ) : (
+                                                <>
+                                                    <option value="">Select Section</option>
+                                                    {sections.length > 0 ? (
+                                                        sections.map(s => (
+                                                            <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>
+                                                        ))
+                                                    ) : (
+                                                        <option value="" disabled>No sections available</option>
+                                                    )}
+                                                </>
+                                            )}
                                         </select>
                                     </div>
                                 </div>

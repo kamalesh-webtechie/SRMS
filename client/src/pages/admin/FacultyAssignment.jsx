@@ -12,6 +12,7 @@ const FacultyAssignment = () => {
     const [subjects, setSubjects] = useState([]);
     const [sections, setSections] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingSections, setLoadingSections] = useState(false);
 
     // Selection/Filter States
     const [selectedDept, setSelectedDept] = useState('');
@@ -30,6 +31,7 @@ const FacultyAssignment = () => {
     const [successMessage, setSuccessMessage] = useState('');
 
     const fetchData = async () => {
+        setLoadingSections(true);
         try {
             const [assRes, deptRes, facRes, subRes, secRes] = await Promise.all([
                 api.get('/teaching-assignments'),
@@ -38,6 +40,7 @@ const FacultyAssignment = () => {
                 api.get('/academic/subjects'),
                 api.get('/sections')
             ]);
+            console.log("Sections:", secRes.data);
             setAssignments(assRes.data);
             setDepartments(deptRes.data);
             setFaculties(facRes.data);
@@ -64,6 +67,7 @@ const FacultyAssignment = () => {
             setError("Failed to load data");
         } finally {
             setLoading(false);
+            setLoadingSections(false);
         }
     };
 
@@ -280,13 +284,26 @@ const FacultyAssignment = () => {
                                 <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Section</label>
                                 <select name="sectionId" className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
                                     value={formData.sectionId} onChange={handleChange} required
-                                    disabled={!selectedDept}>
-                                    <option value="">{selectedDept ? 'Select Section' : 'Select Department First'}</option>
-                                    {getFilteredSections().map(s => (
-                                        <option key={s._id} value={s._id}>
-                                            {s.name} ({s.batch})
-                                        </option>
-                                    ))}
+                                    disabled={!selectedDept || loadingSections}>
+                                    {loadingSections ? (
+                                        <option value="">Loading...</option>
+                                    ) : (
+                                        <>
+                                            <option value="">{selectedDept ? 'Select Section' : 'Select Department First'}</option>
+                                            {(() => {
+                                                const filtered = getFilteredSections();
+                                                return filtered.length > 0 ? (
+                                                    filtered.map(s => (
+                                                        <option key={s._id} value={s._id}>
+                                                            {s.name} ({s.batch})
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <option value="" disabled>No sections available</option>
+                                                );
+                                            })()}
+                                        </>
+                                    )}
                                 </select>
                             </div>
                             <div>

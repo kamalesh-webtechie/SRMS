@@ -11,8 +11,9 @@ const StudentList = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isBulkOpen, setIsBulkOpen] = useState(false);
+     const [isBulkOpen, setIsBulkOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [loadingSections, setLoadingSections] = useState(false);
     const [editingStudent, setEditingStudent] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
     const [undoStack, setUndoStack] = useState(null);
@@ -146,6 +147,7 @@ const StudentList = () => {
             }
             console.log("StudentList: Fetching URL:", studentUrl);
 
+             setLoadingSections(true);
             const [studentRes, deptRes, sectionRes] = await Promise.all([
                 api.get(studentUrl),
                 api.get('/departments'),
@@ -153,11 +155,13 @@ const StudentList = () => {
             ]);
             
             console.log("StudentList: Received students count:", studentRes.data?.length);
+            console.log("Sections:", sectionRes.data);
             
             // Ensure data is array before setting
             setStudents(Array.isArray(studentRes.data) ? studentRes.data : []);
             setDepartments(Array.isArray(deptRes.data) ? deptRes.data : []);
             setSections(Array.isArray(sectionRes.data) ? sectionRes.data : []);
+            setLoadingSections(false);
 
             if (user && user.role === 'hod' && user.departmentId && Array.isArray(deptRes.data)) {
                 const myDept = deptRes.data.find(d => d._id === user.departmentId);
@@ -323,12 +327,24 @@ const StudentList = () => {
                         className="text-sm border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 py-1.5 px-3 bg-white"
                         value={filters.section}
                         onChange={(e) => setFilters({ ...filters, section: e.target.value })}
-                        disabled={!filters.department}
+                        disabled={!filters.department || loadingSections}
                     >
-                        <option value="">All Sections</option>
-                        {(Array.isArray(sections) ? sections : [])
-                            .filter(s => !filters.department || s.department === filters.department)
-                            .map(s => <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>)}
+                        {loadingSections ? (
+                            <option value="">Loading...</option>
+                        ) : (
+                            <>
+                                <option value="">All Sections</option>
+                                {(() => {
+                                    const filtered = (Array.isArray(sections) ? sections : [])
+                                        .filter(s => !filters.department || s.department === filters.department);
+                                    return filtered.length > 0 ? (
+                                        filtered.map(s => <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>)
+                                    ) : (
+                                        <option value="" disabled>No sections available</option>
+                                    );
+                                })()}
+                            </>
+                        )}
                     </select>
 
                     {(filters.department || filters.year || filters.batch || filters.section) && (

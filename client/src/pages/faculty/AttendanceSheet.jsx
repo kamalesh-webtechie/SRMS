@@ -38,6 +38,7 @@ const AttendanceSheet = () => {
     const [departments, setDepartments] = useState([]);
     const [selectedDeptId, setSelectedDeptId] = useState('');
     const [sections, setSections] = useState([]);
+    const [loadingSections, setLoadingSections] = useState(false);
     const [selectedSectionId, setSelectedSectionId] = useState('');
     const [subjects, setSubjects] = useState([]);
     const [selectedSubjectId, setSelectedSubjectId] = useState('');
@@ -90,8 +91,10 @@ const AttendanceSheet = () => {
     useEffect(() => {
         if (isFaculty || !selectedDeptId) return;
         const fetchData = async () => {
+            setLoadingSections(true);
             try {
                 const secRes = await api.get(`/sections/by-department/${selectedDeptId}`);
+                console.log("Sections:", secRes.data);
                 setSections(secRes.data);
                 if (secRes.data.length > 0) setSelectedSectionId(secRes.data[0]._id);
                 const dept = departments.find(d => d._id === selectedDeptId);
@@ -100,7 +103,11 @@ const AttendanceSheet = () => {
                     setSubjects(subRes.data);
                     if (subRes.data.length > 0) setSelectedSubjectId(subRes.data[0]._id);
                 }
-            } catch (error) { console.error(error); }
+            } catch (error) { 
+                console.error(error); 
+            } finally {
+                setLoadingSections(false);
+            }
         };
         fetchData();
     }, [isFaculty, selectedDeptId, departments]);
@@ -217,13 +224,24 @@ const AttendanceSheet = () => {
                                     setIsEditing(true); // Reset editing on new selection
                                 }}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 bg-slate-50 border-2 font-medium"
+                                disabled={loadingSections}
                             >
-                                <option value="">-- Select Class Context --</option>
-                                {assignments.map(a => (
-                                    <option key={a._id} value={a._id}>
-                                        {a.sectionId?.departmentId?.name || "Dept"}, {a.sectionId?.year} Year, Sec {a.sectionId?.name}
-                                    </option>
-                                ))}
+                                {loadingSections ? (
+                                    <option value="">Loading assignments/sections...</option>
+                                ) : (
+                                    <>
+                                        <option value="">-- Select Class Context --</option>
+                                        {assignments.length > 0 ? (
+                                            assignments.map(a => (
+                                                <option key={a._id} value={a._id}>
+                                                    {a.sectionId?.departmentId?.name || "Dept"}, {a.sectionId?.year} Year, Sec {a.sectionId?.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No assignments found</option>
+                                        )}
+                                    </>
+                                )}
                             </select>
                         </div>
                     </div>

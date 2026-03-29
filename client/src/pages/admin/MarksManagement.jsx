@@ -160,7 +160,7 @@ const MarksManagement = () => {
                             ) : sections.length > 0 ? (
                                 sections.map(s => <option key={s._id} value={s._id}>{s.name}</option>)
                             ) : (
-                                <option value="">No sections available</option>
+                                <option value="" disabled>No sections available</option>
                             )}
                         </select>
                     </div>

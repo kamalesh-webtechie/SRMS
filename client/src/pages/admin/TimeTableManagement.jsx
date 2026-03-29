@@ -16,6 +16,7 @@ const TimeTableManagement = () => {
     const [faculties, setFaculties] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingSections, setLoadingSections] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [showBulkModal, setShowBulkModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
@@ -66,6 +67,7 @@ const TimeTableManagement = () => {
     }, [error]);
 
     const fetchData = async () => {
+        setLoadingSections(true);
         try {
             const [ttRes, deptRes, secRes, facRes, subRes] = await Promise.all([
                 api.get('/timetable'),
@@ -74,6 +76,7 @@ const TimeTableManagement = () => {
                 api.get('/faculty'),
                 api.get('/academic/subjects')
             ]);
+            console.log("Sections:", secRes.data);
             setTimetables(ttRes.data.data || []);
             setDepartments(deptRes.data || []);
             setSections(secRes.data || []);
@@ -84,6 +87,7 @@ const TimeTableManagement = () => {
             setError('Failed to load data');
         } finally {
             setLoading(false);
+            setLoadingSections(false);
         }
     };
 
@@ -460,17 +464,30 @@ const TimeTableManagement = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Section</label>
                                     <select className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                        disabled={!formData.year}
+                                        disabled={!formData.year || loadingSections}
                                         value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value, semester: '' })}>
-                                        <option value="">Select Section</option>
-                                        {getFilteredSections().map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
+                                        {loadingSections ? (
+                                            <option value="">Loading...</option>
+                                        ) : (
+                                            <>
+                                                <option value="">Select Section</option>
+                                                {(() => {
+                                                    const filtered = getFilteredSections();
+                                                    return filtered.length > 0 ? (
+                                                        filtered.map(s => <option key={s._id} value={s.name}>{s.name}</option>)
+                                                    ) : (
+                                                        <option value="" disabled>No sections available</option>
+                                                    );
+                                                })()}
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Semester</label>
                                     <select className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                                         disabled={!formData.section}
-                                        value={formData.semester} onChange={(e) => setFormData({ ...formData, semester: e.target.value })}>
+                                        value={formData.semester} onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}>
                                         <option value="">Select Semester</option>
                                         {SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
