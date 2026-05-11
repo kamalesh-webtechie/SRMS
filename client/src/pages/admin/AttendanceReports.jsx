@@ -38,6 +38,7 @@ const AttendanceReports = () => {
     const [reportData, setReportData] = useState([]);
     const [dailySummaryData, setDailySummaryData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingDepts, setLoadingDepts] = useState(false);
     const [loadingSections, setLoadingSections] = useState(false);
 
     // Details Modal State
@@ -51,8 +52,10 @@ const AttendanceReports = () => {
     const [updatingLock, setUpdatingLock] = useState(false);
 
     useEffect(() => {
-        fetchDepartments();
-        fetchSections();
+        if (user) {
+            fetchDepartments();
+            fetchSections();
+        }
         if (systemSettings?.attendanceSettings?.attendanceLockTime) {
             setLockTime(systemSettings.attendanceSettings.attendanceLockTime);
         } else if (systemSettings?.attendanceLockTime) {
@@ -61,6 +64,7 @@ const AttendanceReports = () => {
     }, [systemSettings, user]);
 
     const fetchDepartments = async () => {
+        setLoadingDepts(true);
         try {
             const { data } = await api.get('/departments');
             setDepartments(data);
@@ -72,10 +76,13 @@ const AttendanceReports = () => {
                     setSelectedDept(userDept.code || userDept.name);
                 }
             } else if (data.length > 0 && !selectedDept) {
-                setSelectedDept(data[0].code);
+                // Default to first department if none selected
+                setSelectedDept(data[0].code || data[0].name || '');
             }
         } catch (error) {
             console.error("Failed to fetch departments", error);
+        } finally {
+            setLoadingDepts(false);
         }
     };
 
@@ -270,14 +277,21 @@ const AttendanceReports = () => {
                             value={selectedDept}
                             onChange={(e) => setSelectedDept(e.target.value)}
                             className={clsx(
-                                "w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow",
+                                "w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow font-medium",
                                 user?.role === 'hod' && "bg-gray-100 cursor-not-allowed opacity-75"
                             )}
-                            disabled={user?.role === 'hod'}
+                            disabled={user?.role === 'hod' || loadingDepts}
                         >
-                            {departments.map((d, i) => (
-                                <option key={i} value={d.code || d.name}>{d.name}</option>
-                            ))}
+                            {loadingDepts ? (
+                                <option value="">Loading Departments...</option>
+                            ) : (
+                                <>
+                                    <option value="">Select Department</option>
+                                    {departments.map((d, i) => (
+                                        <option key={i} value={d.code || d.name}>{d.name}</option>
+                                    ))}
+                                </>
+                            )}
                         </select>
                     </div>
                     <div>
