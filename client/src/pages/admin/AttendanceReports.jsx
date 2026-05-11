@@ -502,130 +502,141 @@ const AttendanceReports = () => {
 
             {/* Details Modal */}
             {isDetailsModalOpen && (
-                <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setIsDetailsModalOpen(false)}></div>
-                        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+                    {/* Background overlay */}
+                    <div 
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+                        aria-hidden="true"
+                        onClick={() => setIsDetailsModalOpen(false)}
+                    ></div>
 
-                        <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full max-h-[90vh] flex flex-col">
-                            {/* Fixed Header */}
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900" id="modal-title">
-                                        Attendance Details: {selectedReportRow?.subjectName || 'Daily Summary'}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 mt-1 font-medium">
-                                        {selectedReportRow?.departmentName} • {selectedReportRow?.section} • {selectedReportRow?.date}
-                                    </p>
+                    {/* Modal panel */}
+                    <div className="relative bg-white rounded-2xl text-left shadow-2xl transform transition-all sm:max-w-4xl w-full max-h-[90vh] flex flex-col border border-gray-200 opacity-100 scale-100">
+                        {/* Fixed Header */}
+                        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-center shrink-0">
+                            <div>
+                                <h3 className="text-xl font-extrabold text-gray-900" id="modal-title">
+                                    Attendance Details: {selectedReportRow?.subjectName || 'Daily Summary'}
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1 font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{selectedReportRow?.departmentName}</span>
+                                    <span className="text-gray-300">•</span>
+                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{selectedReportRow?.section}</span>
+                                    <span className="text-gray-300">•</span>
+                                    <span className="text-indigo-600">{selectedReportRow?.date}</span>
+                                </p>
+                            </div>
+                            <button onClick={() => setIsDetailsModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
+                                <X className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        {/* Scrollable Body */}
+                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 custom-scrollbar">
+                            {detailsLoading ? (
+                                <div className="py-20 flex flex-col items-center justify-center">
+                                    <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mb-4" />
+                                    <p className="text-gray-500 font-bold">Fetching records...</p>
                                 </div>
-                                <button onClick={() => setIsDetailsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors p-1 bg-white rounded-full hover:bg-gray-100 border border-transparent hover:border-gray-200">
-                                    <X className="h-6 w-6" />
-                                </button>
-                            </div>
-
-                            {/* Scrollable Body */}
-                            <div className="flex-1 overflow-y-auto p-6 bg-white">
-                                {detailsLoading ? (
-                                    <div className="py-20 flex flex-col items-center justify-center">
-                                        <Loader2 className="h-10 w-10 text-indigo-500 animate-spin mb-4" />
-                                        <p className="text-gray-500 font-medium">Fetching detail records...</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                        <div className="bg-emerald-50/30 rounded-xl p-4 border border-emerald-100">
-                                            <div className="flex items-center justify-between mb-4 border-b border-emerald-100 pb-2">
-                                                <h4 className="font-bold text-emerald-900 flex items-center gap-2">
-                                                    <UserCheck className="h-5 w-5 text-emerald-500" />
-                                                    Present
-                                                </h4>
-                                                <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                                                    {detailsData.present.length}
-                                                </span>
-                                            </div>
-                                            <ul className="space-y-2">
-                                                {detailsData.present.map((s, idx) => (
-                                                    <li key={idx} className="bg-white p-3 rounded-lg border border-emerald-100 flex items-center justify-between shadow-sm">
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-900">{s.name}</p>
-                                                            <p className="text-xs text-emerald-600 font-medium">{s.registerNumber}</p>
-                                                        </div>
-                                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                                    </li>
-                                                ))}
-                                                {detailsData.present.length === 0 && (
-                                                    <li className="py-4 text-center text-sm text-gray-500 italic">No records</li>
-                                                )}
-                                            </ul>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* Present Section */}
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                                        <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                                            <h4 className="font-bold text-emerald-900 flex items-center gap-2 text-sm">
+                                                <UserCheck className="h-4 w-4 text-emerald-600" />
+                                                Present
+                                            </h4>
+                                            <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                                                {detailsData.present.length}
+                                            </span>
                                         </div>
-
-                                        <div className="bg-rose-50/30 rounded-xl p-4 border border-rose-100">
-                                            <div className="flex items-center justify-between mb-4 border-b border-rose-100 pb-2">
-                                                <h4 className="font-bold text-rose-900 flex items-center gap-2">
-                                                    <UserX className="h-5 w-5 text-rose-500" />
-                                                    Absent
-                                                </h4>
-                                                <span className="bg-rose-100 text-rose-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-rose-200">
-                                                    {detailsData.absent.length}
-                                                </span>
-                                            </div>
-                                            <ul className="space-y-2">
-                                                {detailsData.absent.map((s, idx) => (
-                                                    <li key={idx} className="bg-white p-3 rounded-lg border border-rose-100 flex items-center justify-between shadow-sm">
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-900">{s.name}</p>
-                                                            <p className="text-xs text-rose-600 font-medium">{s.registerNumber}</p>
-                                                        </div>
-                                                        <OctagonAlert className="h-4 w-4 text-rose-500" />
-                                                    </li>
-                                                ))}
-                                                {detailsData.absent.length === 0 && (
-                                                    <li className="py-4 text-center text-sm text-gray-500 italic">No records</li>
-                                                )}
-                                            </ul>
-                                        </div>
-
-                                        <div className="bg-amber-50/30 rounded-xl p-4 border border-amber-100">
-                                            <div className="flex items-center justify-between mb-4 border-b border-amber-100 pb-2">
-                                                <h4 className="font-bold text-amber-900 flex items-center gap-2">
-                                                    <UserCheck className="h-5 w-5 text-amber-500" />
-                                                    On Duty
-                                                </h4>
-                                                <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-200">
-                                                    {detailsData.onDuty?.length || 0}
-                                                </span>
-                                            </div>
-                                            <ul className="space-y-2">
-                                                {detailsData.onDuty?.map((s, idx) => (
-                                                    <li key={idx} className="bg-white p-3 rounded-lg border border-amber-100 flex items-center justify-between shadow-sm">
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-900">{s.name}</p>
-                                                            <p className="text-xs text-amber-600 font-medium">{s.registerNumber}</p>
-                                                        </div>
-                                                        <UserCheck className="h-4 w-4 text-amber-500" />
-                                                    </li>
-                                                ))}
-                                                {(!detailsData.onDuty || detailsData.onDuty.length === 0) && (
-                                                    <li className="py-4 text-center text-sm text-gray-500 italic">No records</li>
-                                                )}
-                                            </ul>
+                                        <div className="p-2 space-y-1.5 flex-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                            {detailsData.present.map((s, idx) => (
+                                                <div key={idx} className="p-3 rounded-xl border border-gray-50 flex items-center justify-between hover:bg-emerald-50/50 transition-colors group">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900 group-hover:text-emerald-900">{s.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-mono">{s.registerNumber}</p>
+                                                    </div>
+                                                    <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                                                </div>
+                                            ))}
+                                            {detailsData.present.length === 0 && (
+                                                <div className="py-8 text-center text-xs text-gray-400 italic">No records</div>
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Fixed Footer */}
-                            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 shrink-0 flex justify-end">
-                                <button
-                                    onClick={() => setIsDetailsModalOpen(false)}
-                                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95"
-                                >
-                                    Close Details
-                                </button>
-                            </div>
+                                    {/* Absent Section */}
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                                        <div className="px-4 py-3 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+                                            <h4 className="font-bold text-rose-900 flex items-center gap-2 text-sm">
+                                                <UserX className="h-4 w-4 text-rose-600" />
+                                                Absent
+                                            </h4>
+                                            <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                                                {detailsData.absent.length}
+                                            </span>
+                                        </div>
+                                        <div className="p-2 space-y-1.5 flex-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                            {detailsData.absent.map((s, idx) => (
+                                                <div key={idx} className="p-3 rounded-xl border border-gray-50 flex items-center justify-between hover:bg-rose-50/50 transition-colors group">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900 group-hover:text-rose-900">{s.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-mono">{s.registerNumber}</p>
+                                                    </div>
+                                                    <div className="h-2 w-2 rounded-full bg-rose-500"></div>
+                                                </div>
+                                            ))}
+                                            {detailsData.absent.length === 0 && (
+                                                <div className="py-8 text-center text-xs text-gray-400 italic">No records</div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* OD Section */}
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                                        <div className="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center justify-between">
+                                            <h4 className="font-bold text-amber-900 flex items-center gap-2 text-sm">
+                                                <UserCheck className="h-4 w-4 text-amber-600" />
+                                                On Duty
+                                            </h4>
+                                            <span className="bg-amber-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                                                {detailsData.onDuty?.length || 0}
+                                            </span>
+                                        </div>
+                                        <div className="p-2 space-y-1.5 flex-1 max-h-[400px] overflow-y-auto custom-scrollbar">
+                                            {detailsData.onDuty?.map((s, idx) => (
+                                                <div key={idx} className="p-3 rounded-xl border border-gray-50 flex items-center justify-between hover:bg-amber-50/50 transition-colors group">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900 group-hover:text-amber-900">{s.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-mono">{s.registerNumber}</p>
+                                                    </div>
+                                                    <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                                                </div>
+                                            ))}
+                                            {(!detailsData.onDuty || detailsData.onDuty.length === 0) && (
+                                                <div className="py-8 text-center text-xs text-gray-400 italic">No records</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Fixed Footer */}
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end">
+                            <button
+                                onClick={() => setIsDetailsModalOpen(false)}
+                                className="px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95"
+                            >
+                                Close Details
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
