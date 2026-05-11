@@ -253,6 +253,20 @@ const TimeTableManagement = () => {
         }));
     };
 
+    const handleApplyToAllDays = (periodNumber, subject, facultyId) => {
+        setDayPeriods(prev => {
+            const newState = { ...prev };
+            days.forEach(day => {
+                newState[day] = (newState[day] || []).map(slot => 
+                    slot.periodNumber === periodNumber && slot.type === 'class'
+                    ? { ...slot, subject, facultyId } 
+                    : slot
+                );
+            });
+            return newState;
+        });
+    };
+
     const handleSaveTimetable = async () => {
         try {
             // Validate that all class periods for all days have subject and faculty
@@ -631,6 +645,7 @@ const TimeTableManagement = () => {
                                                     <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
                                                     <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Subject</th>
                                                     <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Faculty</th>
+                                                    <th className="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase">All Days</th>
                                                     <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Action</th>
                                                 </tr>
                                             </thead>
@@ -695,6 +710,22 @@ const TimeTableManagement = () => {
                                                                         );
                                                                     })}
                                                                 </select>
+                                                            ) : <span className="text-gray-400">-</span>}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-center">
+                                                            {slot.type === 'class' ? (
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                                                                    title="Apply this subject and faculty to this period for all days"
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            handleApplyToAllDays(slot.periodNumber, slot.subject, slot.facultyId);
+                                                                            // Uncheck after a moment to show it was an action
+                                                                            setTimeout(() => { e.target.checked = false; }, 500);
+                                                                        }
+                                                                    }}
+                                                                />
                                                             ) : <span className="text-gray-400">-</span>}
                                                         </td>
                                                         <td className="px-4 py-2 text-right">
