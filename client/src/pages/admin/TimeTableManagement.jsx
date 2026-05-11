@@ -68,17 +68,19 @@ const TimeTableManagement = () => {
 
     // Dedicated effect for HOD department resolution
     useEffect(() => {
-        if (isHod && user?.departmentId && departments.length > 0) {
-            const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
-            const hodDept = departments.find(d => 
-                d._id === deptIdStr || 
-                d._id.toString() === deptIdStr?.toString()
-            );
-            if (hodDept && formData.department !== hodDept.name) {
-                setFormData(prev => ({ ...prev, department: hodDept.name }));
+        if (isHod && faculties.length > 0) {
+            const myProfile = faculties.find(f => (f.user?._id || f.user) === user._id);
+            if (myProfile && formData.department !== myProfile.department) {
+                setFormData(prev => ({ ...prev, department: myProfile.department }));
+            } else if (user.departmentId && departments.length > 0) {
+                const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
+                const hodDept = departments.find(d => d._id === deptIdStr || d._id.toString() === deptIdStr?.toString());
+                if (hodDept && formData.department !== hodDept.name) {
+                    setFormData(prev => ({ ...prev, department: hodDept.name }));
+                }
             }
         }
-    }, [isHod, user, departments, formData.department]);
+    }, [isHod, user, faculties, departments, formData.department]);
 
     const fetchData = async () => {
         setLoadingSections(true);
@@ -96,22 +98,38 @@ const TimeTableManagement = () => {
             setSections(secRes.data || []);
             setSubjects(subRes.data || []);
 
+            const fetchedFaculties = facRes.data || [];
+            setFaculties(fetchedFaculties);
+
+            // Resolve HOD Department from their faculty profile
+            if (isHod && user?._id) {
+                const myProfile = fetchedFaculties.find(f => (f.user?._id || f.user) === user._id);
+                if (myProfile) {
+                    setFormData(prev => ({ ...prev, department: myProfile.department }));
+                } else if (user.departmentId) {
+                    // Fallback to departmentId matching
+                    const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
+                    const hodDept = fetchedDepartments.find(d => d._id === deptIdStr || d._id.toString() === deptIdStr?.toString());
+                    if (hodDept) {
+                        setFormData(prev => ({ ...prev, department: hodDept.name }));
+                    }
+                }
+            }
+
             // Sort Faculty: HOD's department first
-            let fetchedFaculties = facRes.data || [];
-            if (isHod && user?.departmentId) {
-                const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
-                const hodDept = fetchedDepartments.find(d => d._id === deptIdStr || d._id.toString() === deptIdStr?.toString());
-                if (hodDept) {
-                    fetchedFaculties = [...fetchedFaculties].sort((a, b) => {
-                        const aInDept = a.department === hodDept.name;
-                        const bInDept = b.department === hodDept.name;
+            if (isHod) {
+                setFaculties(prev => {
+                    const currentDept = formData.department;
+                    if (!currentDept) return prev;
+                    return [...prev].sort((a, b) => {
+                        const aInDept = a.department === currentDept;
+                        const bInDept = b.department === currentDept;
                         if (aInDept && !bInDept) return -1;
                         if (!aInDept && bInDept) return 1;
                         return 0;
                     });
-                }
+                });
             }
-            setFaculties(fetchedFaculties);
             
             setTimetables(ttRes.data.data || []);
         } catch (err) {
