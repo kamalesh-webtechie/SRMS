@@ -254,10 +254,15 @@ const TimeTableManagement = () => {
     };
 
     const handleApplyToAllDays = (periodNumber, subject, facultyId) => {
+        if (!subject || !facultyId) {
+            setError('Please select Subject and Faculty first');
+            return;
+        }
+
         setDayPeriods(prev => {
             const newState = { ...prev };
-            days.forEach(day => {
-                newState[day] = (newState[day] || []).map(slot => 
+            Object.keys(newState).forEach(day => {
+                newState[day] = newState[day].map(slot => 
                     slot.periodNumber === periodNumber && slot.type === 'class'
                     ? { ...slot, subject, facultyId } 
                     : slot
@@ -265,6 +270,7 @@ const TimeTableManagement = () => {
             });
             return newState;
         });
+        setSuccessMessage(`Period ${Math.floor(periodNumber)} synced across all days`);
     };
 
     const handleSaveTimetable = async () => {
@@ -714,18 +720,16 @@ const TimeTableManagement = () => {
                                                         </td>
                                                         <td className="px-4 py-2 text-center">
                                                             {slot.type === 'class' ? (
-                                                                <input 
-                                                                    type="checkbox" 
-                                                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
-                                                                    title="Apply this subject and faculty to this period for all days"
-                                                                    onChange={(e) => {
-                                                                        if (e.target.checked) {
-                                                                            handleApplyToAllDays(slot.periodNumber, slot.subject, slot.facultyId);
-                                                                            // Uncheck after a moment to show it was an action
-                                                                            setTimeout(() => { e.target.checked = false; }, 500);
-                                                                        }
-                                                                    }}
-                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleApplyToAllDays(slot.periodNumber, slot.subject, slot.facultyId)}
+                                                                    className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                                                                    title="Apply to all days"
+                                                                >
+                                                                    <div className={`h-4 w-4 border-2 rounded flex items-center justify-center ${slot.subject && slot.facultyId ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
+                                                                        <Plus className="h-3 w-3" />
+                                                                    </div>
+                                                                </button>
                                                             ) : <span className="text-gray-400">-</span>}
                                                         </td>
                                                         <td className="px-4 py-2 text-right">
