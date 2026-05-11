@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 const FacultyAssignment = () => {
     const { user } = useAuth();
     // Data List States
-    const [assignments, setAssignments] = useState([]);
+    const [allocations, setAllocations] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [faculties, setFaculties] = useState([]);
     const [subjects, setSubjects] = useState([]);
@@ -41,7 +41,7 @@ const FacultyAssignment = () => {
                 api.get('/sections')
             ]);
             console.log("Sections:", secRes.data);
-            setAssignments(assRes.data);
+            setAllocations(assRes.data);
             setDepartments(deptRes.data);
             setFaculties(facRes.data);
             setSubjects(subRes.data);
@@ -63,7 +63,7 @@ const FacultyAssignment = () => {
               // Optionally select first department for admin
             }
         } catch (error) {
-            console.error("Failed to fetch assignment data", error);
+            console.error("Failed to fetch allocation data", error);
             setError("Failed to load data");
         } finally {
             setLoading(false);
@@ -161,7 +161,7 @@ const FacultyAssignment = () => {
 
         try {
             const { data } = await api.post('/teaching-assignments', formData);
-            setSuccessMessage(`Faculty member ${data.facultyId?.user?.name || 'Faculty'} has been successfully assigned to the course.`);
+            setSuccessMessage(`Faculty member ${data.facultyId?.user?.name || 'Faculty'} has been successfully allocated to the course.`);
             fetchData();
             // Optional: clear form selection but keep filters?
             setFormData(prev => ({ ...prev, subjectId: '', sectionId: '' }));
@@ -171,13 +171,13 @@ const FacultyAssignment = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Remove this assignment?')) {
+        if (window.confirm('Remove this allocation?')) {
             try {
                 await api.delete(`/teaching-assignments/${id}`);
-                setAssignments(assignments.filter(a => a._id !== id));
+                setAllocations(allocations.filter(a => a._id !== id));
             } catch (err) {
                 console.error(err);
-                alert('Failed to delete assignment');
+                alert('Failed to delete allocation');
             }
         }
     };
@@ -200,7 +200,7 @@ const FacultyAssignment = () => {
     return (
         <div className="space-y-6 animate-fade-in">
             <div>
-                <h2 className="text-2xl font-bold text-gray-900">Faculty Teaching Assignments</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Faculty Teaching Allocations</h2>
                 <p className="text-gray-500 mt-1">Assign subjects and sections to faculty members.</p>
             </div>
 
@@ -209,7 +209,7 @@ const FacultyAssignment = () => {
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                         <UserCheck className="h-5 w-5 mr-2 text-indigo-600" />
-                        New Assignment
+                        New Allocation
                     </h3>
                 </div>
 
@@ -340,23 +340,23 @@ const FacultyAssignment = () => {
                             <button type="submit"
                                 className="w-full md:w-auto inline-flex justify-center items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                                 <UserCheck className="h-4 w-4 mr-2" />
-                                Assign Faculty
+                                Allocate Faculty
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            {/* Assignments List */}
+            {/* Allocations List */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                    <h3 className="text-lg font-semibold text-gray-900">Current Assignments</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Current Allocations</h3>
                 </div>
 
                 {loading ? (
                     <div className="p-12 text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
-                        <p className="mt-2 text-gray-500">Loading assignments...</p>
+                        <p className="mt-2 text-gray-500">Loading allocations...</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -373,49 +373,49 @@ const FacultyAssignment = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {assignments.map((assignment) => (
-                                    <tr key={assignment._id} className="hover:bg-gray-50 transition-colors">
+                                {allocations.map((allocation) => (
+                                    <tr key={allocation._id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold mr-3 text-xs">
-                                                    {(assignment.facultyId?.user?.name || "U")[0]}
+                                                    {(allocation.facultyId?.user?.name || "U")[0]}
                                                 </div>
                                                 <div className="text-sm font-medium text-gray-900">
-                                                    {assignment.facultyId?.user?.name || assignment.facultyId?.name || "Unknown"}
+                                                    {allocation.facultyId?.user?.name || allocation.facultyId?.name || "Unknown"}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{assignment.subjectId?.name}</div>
-                                            <div className="text-xs text-gray-500">{assignment.subjectId?.code}</div>
+                                            <div className="text-sm text-gray-900">{allocation.subjectId?.name}</div>
+                                            <div className="text-xs text-gray-500">{allocation.subjectId?.code}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {assignment.sectionId?.departmentId?.name || assignment.sectionId?.department || "-"}
+                                            {allocation.sectionId?.departmentId?.name || allocation.sectionId?.department || "-"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-sm font-medium text-gray-900">{assignment.sectionId?.name}</span>
-                                            <span className="text-xs text-gray-500 ml-1">({assignment.sectionId?.year})</span>
+                                            <span className="text-sm font-medium text-gray-900">{allocation.sectionId?.name}</span>
+                                            <span className="text-xs text-gray-500 ml-1">({allocation.sectionId?.year})</span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {assignment.semester || assignment.subjectId?.semester || '-'}
+                                            {allocation.semester || allocation.subjectId?.semester || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                {assignment.academicYear}
+                                                {allocation.academicYear}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button onClick={() => handleDelete(assignment._id)}
+                                            <button onClick={() => handleDelete(allocation._id)}
                                                 className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </td>
                                     </tr>
                                 ))}
-                                {assignments.length === 0 && (
+                                {allocations.length === 0 && (
                                     <tr>
                                         <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
-                                            No assignments found. Use the filters to assign.
+                                            No allocations found. Use the filters to allocate.
                                         </td>
                                     </tr>
                                 )}

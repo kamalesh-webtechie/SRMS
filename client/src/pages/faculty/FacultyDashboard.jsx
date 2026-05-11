@@ -89,7 +89,7 @@ const FacultyDashboard = () => {
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center">
                                 <BookOpen className="h-5 w-5 mr-2 text-indigo-600" />
-                                My Teaching Assignments
+                                My Teaching Allocations
                             </h3>
                         </div>
 
@@ -132,7 +132,7 @@ const FacultyDashboard = () => {
                                     <div className="bg-slate-50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
                                         <BookOpen className="h-8 w-8 text-slate-400" />
                                     </div>
-                                    <p className="text-slate-500 font-medium">No subjects assigned for this term.</p>
+                                    <p className="text-slate-500 font-medium">No subjects allocated for this term.</p>
                                 </div>
                             )}
                         </div>

@@ -169,7 +169,7 @@ const HodDashboard = () => {
                                 { name: 'Subject List', path: '/dashboard/subjects', icon: Book, color: 'text-blue-600' },
                                 { name: 'Faculties', path: '/dashboard/faculty', icon: Users, color: 'text-emerald-600' },
                                 { name: 'Students', path: '/dashboard/students', icon: GraduationCap, color: 'text-orange-600' },
-                                { name: 'Class Allocations', path: '/dashboard/assignments', icon: ChevronRight, color: 'text-slate-600' }
+                                { name: 'Class Allocations', path: '/dashboard/allocations', icon: ChevronRight, color: 'text-slate-600' }
                             ].map((item) => (
                                 <Link
                                     key={item.name}

@@ -209,8 +209,8 @@ const DashboardLayout = () => {
                                     onClick={handleNavItemClick}
                                 />
                                 <SidebarItem
-                                    to="/dashboard/assignments"
-                                    active={location.pathname.startsWith('/dashboard/assignments')}
+                                    to="/dashboard/allocations"
+                                    active={location.pathname.startsWith('/dashboard/allocations')}
                                     icon={UserCheck}
                                     label="Allocations"
                                     collapsed={!isSidebarOpen}
@@ -302,8 +302,8 @@ const DashboardLayout = () => {
                                     onClick={handleNavItemClick}
                                 />
                                 <SidebarItem
-                                    to="/dashboard/assignments"
-                                    active={location.pathname.startsWith('/dashboard/assignments')}
+                                    to="/dashboard/allocations"
+                                    active={location.pathname.startsWith('/dashboard/allocations')}
                                     icon={UserCheck}
                                     label="Class Allocations"
                                     collapsed={!isSidebarOpen}

@@ -215,7 +215,7 @@ const AttendanceSheet = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-8">
-                        <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide px-1">Choose Assigned Class</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide px-1">Choose Allocated Class</label>
                         <div className="relative">
                             <select
                                 value={selectedAssignmentId}
@@ -227,7 +227,7 @@ const AttendanceSheet = () => {
                                 disabled={loadingSections}
                             >
                                 {loadingSections ? (
-                                    <option value="">Loading assignments/sections...</option>
+                                    <option value="">Loading allocations/sections...</option>
                                 ) : (
                                     <>
                                         <option value="">-- Select Class Context --</option>
@@ -238,7 +238,7 @@ const AttendanceSheet = () => {
                                                 </option>
                                             ))
                                         ) : (
-                                            <option value="" disabled>No assignments found</option>
+                                            <option value="" disabled>No allocations found</option>
                                         )}
                                     </>
                                 )}

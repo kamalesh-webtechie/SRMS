@@ -36,7 +36,7 @@ const FacultyTimeTable = () => {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">{error || 'No classes assigned to you yet'}</p>
+                <p className="text-gray-500">{error || 'No classes allocated to you yet'}</p>
             </div>
         );
     }
@@ -73,7 +73,7 @@ const FacultyTimeTable = () => {
         <div className="space-y-6 animate-fade-in">
             <div>
                 <h2 className="text-2xl font-bold text-gray-900">Weekly Teaching Schedule</h2>
-                <p className="text-gray-500 mt-1">Unified view of all your assigned sessions</p>
+                <p className="text-gray-500 mt-1">Unified view of all your allocated sessions</p>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -143,7 +143,7 @@ const FacultyTimeTable = () => {
                         <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
                         <h4 className="text-sm font-bold text-emerald-900">Portal View</h4>
                     </div>
-                    <p className="text-xs text-emerald-700">This grid consolidates assignments from multiple departments and classes into a single weekly view.</p>
+                    <p className="text-xs text-emerald-700">This grid consolidates allocations from multiple departments and classes into a single weekly view.</p>
                 </div>
             </div>
         </div>

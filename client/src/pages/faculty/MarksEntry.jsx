@@ -193,7 +193,7 @@ const MarksEntry = () => {
 
                         <div className="p-6 space-y-5">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Teaching Assignment</label>
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Teaching Allocation</label>
                                 <select
                                     value={selectedAssignmentId}
                                     onChange={(e) => setSelectedAssignmentId(e.target.value)}
@@ -209,8 +209,8 @@ const MarksEntry = () => {
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="flex-1">
                                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Semester</label>
                                     <select
                                         value={semester}
@@ -224,7 +224,7 @@ const MarksEntry = () => {
                                         ))}
                                     </select>
                                 </div>
-                                <div>
+                                <div className="flex-1">
                                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Max Marks</label>
                                     <input
                                         type="number"
@@ -313,11 +313,11 @@ const MarksEntry = () => {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-x-auto">
+                        <div className="flex-1 overflow-x-auto custom-scrollbar">
                             {!selectedAssignmentId || !semester ? (
                                 <div className="h-full flex flex-col items-center justify-center p-12 text-center text-gray-400">
                                     <BookOpen className="h-12 w-12 mb-3 opacity-20" />
-                                    <p>Select an assignment to view students.</p>
+                                    <p>Select an allocation to view students.</p>
                                 </div>
                             ) : loading ? (
                                 <div className="h-full flex flex-col items-center justify-center p-12">

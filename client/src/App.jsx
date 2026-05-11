@@ -118,7 +118,7 @@ function App() {
               <Route path="subjects" element={<ProtectedRoute allowedRoles={['admin', 'hod']}><SubjectList /></ProtectedRoute>} />
               <Route path="departments" element={<ProtectedRoute allowedRoles={['admin']}><DepartmentList /></ProtectedRoute>} />
               <Route path="sections" element={<ProtectedRoute allowedRoles={['admin', 'hod']}><SectionManagement /></ProtectedRoute>} />
-              <Route path="assignments" element={<ProtectedRoute allowedRoles={['admin', 'hod']}><FacultyAssignment /></ProtectedRoute>} />
+              <Route path="allocations" element={<ProtectedRoute allowedRoles={['admin', 'hod']}><FacultyAssignment /></ProtectedRoute>} />
               <Route path="publish" element={<ProtectedRoute allowedRoles={['admin']}><PublishResults /></ProtectedRoute>} />
               <Route path="attendance-report" element={<ProtectedRoute allowedRoles={['admin', 'hod']}><AttendanceReports /></ProtectedRoute>} />
               <Route path="settings" element={<ProtectedRoute allowedRoles={['admin']}><SystemSettings /></ProtectedRoute>} />
