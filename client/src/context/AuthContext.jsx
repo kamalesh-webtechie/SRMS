@@ -9,13 +9,13 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const checkLoggedIn = async () => {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (token) {
                 try {
                     const { data } = await api.get('/auth/me');
                     setUser(data.user);
                 } catch (error) {
-                    localStorage.removeItem('token');
+                    sessionStorage.removeItem('token');
                     setUser(null);
                 }
             }
@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         const { data } = await api.post('/auth/login', { email, password });
         if (data.token) {
-            localStorage.setItem('token', data.token);
+            sessionStorage.setItem('token', data.token);
             setUser({
                 _id: data._id,
                 name: data.name,
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
     const verifyOTP = async (email, otp) => {
         const { data } = await api.post('/auth/verify-otp', { email, otp });
         if (data.token) {
-            localStorage.setItem('token', data.token);
+            sessionStorage.setItem('token', data.token);
             setUser({
                 _id: data._id,
                 name: data.name,
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         setUser(null);
     };
 
@@ -66,6 +66,11 @@ export const AuthProvider = ({ children }) => {
 
     const resendOTP = async (email) => {
         const { data } = await api.post('/auth/resend-otp', { email });
+        return data;
+    };
+
+    const resendEmailOTP = async (email) => {
+        const { data } = await api.post('/auth/resend-email-otp', { email });
         return data;
     };
 
@@ -88,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     const verifyWebAuthnAuthentication = async (email, body) => {
         const { data } = await api.post('/auth/webauthn/verify-authentication', { email, body });
         if (data.token) {
-            localStorage.setItem('token', data.token);
+            sessionStorage.setItem('token', data.token);
             setUser({
                 _id: data._id,
                 name: data.name,
@@ -106,6 +111,7 @@ export const AuthProvider = ({ children }) => {
             logout,
             verifyOTP,
             resendOTP,
+            resendEmailOTP,
             getWebAuthnRegisterOptions,
             verifyWebAuthnRegistration,
             getWebAuthnLoginOptions,
