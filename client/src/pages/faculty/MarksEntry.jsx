@@ -86,8 +86,10 @@ const MarksEntry = () => {
                     setMaxMarks(myMarkDoc.maxMarks || 100);
                     const initialValues = {};
                     myMarkDoc.records.forEach(r => {
-                        const sid = r.studentId._id || r.studentId;
-                        initialValues[sid] = r.marks;
+                        if (r.studentId) {
+                            const sid = r.studentId._id || r.studentId;
+                            initialValues[sid] = r.marks;
+                        }
                     });
                     setMarksValues(initialValues);
                 } else {
@@ -156,7 +158,7 @@ const MarksEntry = () => {
         }
     };
 
-    const isLocked = existingMarkDoc?.isLocked;
+    const isLocked = existingMarkDoc?.isLocked || existingMarkDoc?.status === 'published';
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-20 px-4 md:px-0">
@@ -196,7 +198,14 @@ const MarksEntry = () => {
                                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Teaching Allocation</label>
                                 <select
                                     value={selectedAssignmentId}
-                                    onChange={(e) => setSelectedAssignmentId(e.target.value)}
+                                    onChange={(e) => {
+                                        const id = e.target.value;
+                                        setSelectedAssignmentId(id);
+                                        const assign = assignments.find(a => a._id === id);
+                                        if (assign && assign.subjectId) {
+                                            setSemester(assign.subjectId.semester || '');
+                                        }
+                                    }}
                                     disabled={isLocked}
                                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3"
                                 >
