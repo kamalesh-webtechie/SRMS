@@ -374,7 +374,7 @@ const AttendanceSheet = () => {
 
             {message && (
                 <div className={clsx(
-                    "fixed bottom-10 right-10 z-[200] px-6 py-4 rounded-2xl shadow-xl border text-sm flex items-center gap-4 animate-slide-up max-w-md",
+                    "fixed top-10 right-10 z-[200] px-6 py-4 rounded-2xl shadow-xl border text-sm flex items-center gap-4 animate-slide-up max-w-md",
                     message.type === 'success' ? "bg-white text-slate-700 border-slate-200" : "bg-red-50 text-red-700 border-red-100"
                 )}>
                     {message.type === 'success' ? (

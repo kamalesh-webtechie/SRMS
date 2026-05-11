@@ -17,15 +17,16 @@ const getDepartments = async (req, res) => {
 // @access  Private/Admin
 const createDepartment = async (req, res) => {
     try {
-        const { name, hodName, description } = req.body;
+        const { name, code, hodName, description } = req.body;
 
-        const deptExists = await Department.findOne({ name });
+        const deptExists = await Department.findOne({ $or: [{ name }, { code }] });
         if (deptExists) {
-            return res.status(400).json({ message: 'Department already exists' });
+            return res.status(400).json({ message: 'Department or code already exists' });
         }
 
         const department = await Department.create({
             name,
+            code,
             hodName,
             description
         });
