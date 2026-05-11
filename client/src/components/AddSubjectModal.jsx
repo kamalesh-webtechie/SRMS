@@ -42,10 +42,10 @@ const AddSubjectModal = ({ isOpen, onClose, onSubjectAdded, editingSubject }) =>
                     } else {
                         // Reset when opening for new subject
                         let defaultDept = data.length > 0 ? data[0].name : '';
-                        let defaultDeptId = '';
+                        let defaultDeptId = data.length > 0 ? data[0]._id : '';
                         
                         if (user && user.role === 'hod' && user.departmentId) {
-                            const myDept = data.find(d => d._id === user.departmentId);
+                            const myDept = data.find(d => d._id === user.departmentId || d.id === user.departmentId);
                             if (myDept) {
                                 defaultDept = myDept.name;
                                 defaultDeptId = myDept._id;
@@ -84,11 +84,16 @@ const AddSubjectModal = ({ isOpen, onClose, onSubjectAdded, editingSubject }) =>
         setLoading(true);
         setError('');
 
+        const submissionData = {
+            ...formData,
+            departmentId: formData.departmentId === '' ? null : formData.departmentId
+        };
+
         try {
             if (editingSubject) {
-                await api.put(`/academic/subjects/${editingSubject._id}`, formData);
+                await api.put(`/academic/subjects/${editingSubject._id}`, submissionData);
             } else {
-                await api.post('/academic/subjects', formData);
+                await api.post('/academic/subjects', submissionData);
             }
             onSubjectAdded();
             onClose();
@@ -144,7 +149,15 @@ const AddSubjectModal = ({ isOpen, onClose, onSubjectAdded, editingSubject }) =>
                                     name="isCommon"
                                     className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-lg transition-all"
                                     checked={formData.isCommon}
-                                    onChange={(e) => setFormData({ ...formData, isCommon: e.target.checked })}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setFormData({ 
+                                            ...formData, 
+                                            isCommon: checked,
+                                            department: checked ? 'Common' : (departments.length > 0 ? departments[0].name : ''),
+                                            departmentId: checked ? '' : (departments.length > 0 ? departments[0]._id : '')
+                                        });
+                                    }}
                                 />
                                 <label htmlFor="isCommon" className="text-sm font-bold text-gray-700 px-1 cursor-pointer select-none">
                                     Common to all departments
