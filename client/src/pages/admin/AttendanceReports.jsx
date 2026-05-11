@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { useSystem } from '../../context/SystemContext';
 import {
     FileText,
@@ -24,6 +25,7 @@ import clsx from 'clsx';
 import { YEARS } from '../../utils/academicUtils';
 
 const AttendanceReports = () => {
+    const { user } = useAuth();
     const { systemSettings, updateSystemSettings } = useSystem();
     const [departments, setDepartments] = useState([]);
     const [sections, setSections] = useState([]);
@@ -56,13 +58,22 @@ const AttendanceReports = () => {
         } else if (systemSettings?.attendanceLockTime) {
             setLockTime(systemSettings.attendanceLockTime);
         }
-    }, [systemSettings]);
+    }, [systemSettings, user]);
 
     const fetchDepartments = async () => {
         try {
             const { data } = await api.get('/departments');
             setDepartments(data);
-            if (data.length > 0 && !selectedDept) setSelectedDept(data[0].code);
+            
+            // If user is HOD, default to their department and freeze
+            if (user?.role === 'hod' && user.departmentId) {
+                const userDept = data.find(d => d._id === user.departmentId || d.id === user.departmentId);
+                if (userDept) {
+                    setSelectedDept(userDept.code || userDept.name);
+                }
+            } else if (data.length > 0 && !selectedDept) {
+                setSelectedDept(data[0].code);
+            }
         } catch (error) {
             console.error("Failed to fetch departments", error);
         }
@@ -258,7 +269,11 @@ const AttendanceReports = () => {
                         <select
                             value={selectedDept}
                             onChange={(e) => setSelectedDept(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow"
+                            className={clsx(
+                                "w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none bg-white transition-shadow",
+                                user?.role === 'hod' && "bg-gray-100 cursor-not-allowed opacity-75"
+                            )}
+                            disabled={user?.role === 'hod'}
                         >
                             {departments.map((d, i) => (
                                 <option key={i} value={d.code || d.name}>{d.name}</option>
