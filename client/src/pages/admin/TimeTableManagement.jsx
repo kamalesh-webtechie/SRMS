@@ -66,6 +66,20 @@ const TimeTableManagement = () => {
         }
     }, [error]);
 
+    // Dedicated effect for HOD department resolution
+    useEffect(() => {
+        if (isHod && user?.departmentId && departments.length > 0) {
+            const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
+            const hodDept = departments.find(d => 
+                d._id === deptIdStr || 
+                d._id.toString() === deptIdStr?.toString()
+            );
+            if (hodDept && formData.department !== hodDept.name) {
+                setFormData(prev => ({ ...prev, department: hodDept.name }));
+            }
+        }
+    }, [isHod, user, departments, formData.department]);
+
     const fetchData = async () => {
         setLoadingSections(true);
         try {
@@ -82,18 +96,11 @@ const TimeTableManagement = () => {
             setSections(secRes.data || []);
             setSubjects(subRes.data || []);
 
-            // Set HOD department name automatically
-            if (isHod && user?.departmentId) {
-                const hodDept = fetchedDepartments.find(d => d._id === user.departmentId);
-                if (hodDept) {
-                    setFormData(prev => ({ ...prev, department: hodDept.name }));
-                }
-            }
-
             // Sort Faculty: HOD's department first
             let fetchedFaculties = facRes.data || [];
             if (isHod && user?.departmentId) {
-                const hodDept = fetchedDepartments.find(d => d._id === user.departmentId);
+                const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
+                const hodDept = fetchedDepartments.find(d => d._id === deptIdStr || d._id.toString() === deptIdStr?.toString());
                 if (hodDept) {
                     fetchedFaculties = [...fetchedFaculties].sort((a, b) => {
                         const aInDept = a.department === hodDept.name;
@@ -335,8 +342,12 @@ const TimeTableManagement = () => {
         });
 
         // Re-apply HOD department if resetting
-        if (isHod && user?.departmentId) {
-            const hodDept = departments.find(d => d._id === user.departmentId);
+        if (isHod && user?.departmentId && departments.length > 0) {
+            const deptIdStr = typeof user.departmentId === 'object' ? user.departmentId._id : user.departmentId;
+            const hodDept = departments.find(d => 
+                d._id === deptIdStr || 
+                d._id.toString() === deptIdStr?.toString()
+            );
             if (hodDept) {
                 setFormData(prev => ({ ...prev, department: hodDept.name }));
             }
@@ -470,7 +481,7 @@ const TimeTableManagement = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Department</label>
                                     <select className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                        disabled={isHod}
+                                        disabled={isHod && !!formData.department}
                                         value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value, batch: '', year: '', section: '', semester: '' })}>
                                         <option value="">Select Department</option>
                                         {departments.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
