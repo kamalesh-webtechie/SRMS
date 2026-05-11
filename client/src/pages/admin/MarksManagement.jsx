@@ -158,7 +158,7 @@ const MarksManagement = () => {
                             {loadingFilters ? (
                                 <option value="">Loading...</option>
                             ) : sections.length > 0 ? (
-                                sections.map(s => <option key={s._id} value={s._id}>{s.name}</option>)
+                                sections.map(s => <option key={s._id} value={s._id}>Year {s.year} - Section {s.name}</option>)
                             ) : (
                                 <option value="" disabled>No sections available</option>
                             )}

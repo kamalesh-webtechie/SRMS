@@ -296,7 +296,7 @@ const AttendanceReports = () => {
                                         );
                                         return filtered.length > 0 ? (
                                             filtered.map(s => (
-                                                <option key={s._id} value={s._id}>{s.name} ({s.batch})</option>
+                                                <option key={s._id} value={s._id}>Year {s.year} - {s.name} ({s.batch})</option>
                                             ))
                                         ) : (
                                             <option value="" disabled>No sections available</option>

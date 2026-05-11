@@ -203,7 +203,7 @@ const MarksEntry = () => {
                                     <option value="">-- Choose Module --</option>
                                     {assignments.map(a => (
                                         <option key={a._id} value={a._id}>
-                                            {a.subjectId?.name} ({a.sectionId?.name})
+                                            {a.subjectId?.name} (Year {a.sectionId?.year} - Section {a.sectionId?.name})
                                         </option>
                                     ))}
                                 </select>

@@ -218,6 +218,10 @@ const StudentProfile = () => {
                                 <span className="font-medium text-emerald-600">{profile.section?.name || 'Not Assigned'}</span>
                             </div>
                             <div className="flex justify-between border-b border-gray-100 pb-2">
+                                <span className="text-gray-600">Year</span>
+                                <span className="font-medium text-indigo-600">Year {profile.currentYear || 'I'}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-gray-100 pb-2">
                                 <span className="text-gray-600">Email (Official)</span>
                                 <span className="font-medium text-gray-900 truncate max-w-[150px]" title={user.email}>{user.email}</span>
                             </div>

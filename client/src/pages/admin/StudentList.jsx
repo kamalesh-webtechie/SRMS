@@ -385,8 +385,7 @@ const StudentList = () => {
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reg No</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Roll No</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Year</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Year & Section</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch</th>
                                     {user?.role === 'admin' && (
                                         <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -450,11 +449,8 @@ const StudentList = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {student.department}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className="text-sm font-bold text-gray-900">{student.currentYear || 'I'}</span>
-                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                                                {student.section?.name || '—'}
+                                                <span className="text-indigo-600 font-bold">{student.currentYear || 'I'}</span> - {student.section?.name || '—'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {student.batch}

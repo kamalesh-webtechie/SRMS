@@ -420,6 +420,7 @@ const getStudentResultSheet = async (req, res) => {
                 registerNumber: student.registerNumber,
                 department: student.department,
                 section: student.sectionId, // Populated section object
+                currentYear: student.currentYear,
                 hasNewResult: hasNew,
                 cgpa: cgpa,
                 cgpaExcludingFailures: cgpaExcludingFailures

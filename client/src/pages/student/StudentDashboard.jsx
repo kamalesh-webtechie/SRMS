@@ -161,9 +161,9 @@ const StudentDashboard = () => {
                             <div className="text-xl font-bold">{student.department}</div>
                         </div>
                         <div>
-                            <div className="text-blue-200 text-sm uppercase tracking-wider">Section</div>
+                            <div className="text-blue-200 text-sm uppercase tracking-wider">Year & Section</div>
                             <div className="text-xl font-bold bg-white/10 px-3 py-1 rounded-lg backdrop-blur-sm inline-block">
-                                {student.section?.name || 'No Section'}
+                                {student.currentYear || 'I'} - {student.section?.name || 'No Section'}
                             </div>
                         </div>
                     </div>
