@@ -112,7 +112,14 @@ exports.getTimeTables = async (req, res) => {
         if (req.user.role === 'hod') {
             query.department = req.user.department;
         }
-        const timetables = await TimeTable.find(query).populate('days.periods.facultyId', 'name');
+        const timetables = await TimeTable.find(query).populate({
+            path: 'days.periods.facultyId',
+            select: 'name email',
+            populate: {
+                path: 'facultyProfile',
+                select: 'employeeId department'
+            }
+        });
         res.status(200).json({
             success: true,
             data: timetables
@@ -159,7 +166,14 @@ exports.getStudentTimeTable = async (req, res) => {
             query.section = studentProfile.section;
         }
 
-        const timetable = await TimeTable.findOne(query).populate('days.periods.facultyId', 'name');
+        const timetable = await TimeTable.findOne(query).populate({
+            path: 'days.periods.facultyId',
+            select: 'name email',
+            populate: {
+                path: 'facultyProfile',
+                select: 'employeeId department'
+            }
+        });
 
         res.status(200).json({
             success: true,
@@ -181,7 +195,14 @@ exports.getFacultyTimeTable = async (req, res) => {
         const facultyId = req.user.id;
         const timetables = await TimeTable.find({
             'days.periods.facultyId': facultyId
-        }).populate('days.periods.facultyId', 'name');
+        }).populate({
+            path: 'days.periods.facultyId',
+            select: 'name email',
+            populate: {
+                path: 'facultyProfile',
+                select: 'employeeId department'
+            }
+        });
 
         // Filter out only periods assigned to this faculty
         const facultySchedule = timetables.map(tt => ({

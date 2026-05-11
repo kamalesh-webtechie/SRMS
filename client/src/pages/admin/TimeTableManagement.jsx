@@ -76,12 +76,37 @@ const TimeTableManagement = () => {
                 api.get('/faculty'),
                 api.get('/academic/subjects')
             ]);
-            console.log("Sections:", secRes.data);
-            setTimetables(ttRes.data.data || []);
-            setDepartments(deptRes.data || []);
+            
+            const fetchedDepartments = deptRes.data || [];
+            setDepartments(fetchedDepartments);
             setSections(secRes.data || []);
-            setFaculties(facRes.data || []);
             setSubjects(subRes.data || []);
+
+            // Set HOD department name automatically
+            if (isHod && user?.departmentId) {
+                const hodDept = fetchedDepartments.find(d => d._id === user.departmentId);
+                if (hodDept) {
+                    setFormData(prev => ({ ...prev, department: hodDept.name }));
+                }
+            }
+
+            // Sort Faculty: HOD's department first
+            let fetchedFaculties = facRes.data || [];
+            if (isHod && user?.departmentId) {
+                const hodDept = fetchedDepartments.find(d => d._id === user.departmentId);
+                if (hodDept) {
+                    fetchedFaculties = [...fetchedFaculties].sort((a, b) => {
+                        const aInDept = a.department === hodDept.name;
+                        const bInDept = b.department === hodDept.name;
+                        if (aInDept && !bInDept) return -1;
+                        if (!aInDept && bInDept) return 1;
+                        return 0;
+                    });
+                }
+            }
+            setFaculties(fetchedFaculties);
+            
+            setTimetables(ttRes.data.data || []);
         } catch (err) {
             console.error('Failed to fetch data', err);
             setError('Failed to load data');
@@ -295,7 +320,7 @@ const TimeTableManagement = () => {
 
     const resetForm = () => {
         setFormData({
-            department: isHod ? user?.department : '',
+            department: '',
             batch: '',
             year: '',
             section: '',
@@ -308,6 +333,14 @@ const TimeTableManagement = () => {
             lunchAfter: ttConfig.lunchBreak?.afterPeriod || 4,
             lunchDuration: ttConfig.lunchBreak?.duration || 60
         });
+
+        // Re-apply HOD department if resetting
+        if (isHod && user?.departmentId) {
+            const hodDept = departments.find(d => d._id === user.departmentId);
+            if (hodDept) {
+                setFormData(prev => ({ ...prev, department: hodDept.name }));
+            }
+        }
         setDayPeriods({});
         setEditMode(false);
         setCurrentTimetable(null);
@@ -624,9 +657,14 @@ const TimeTableManagement = () => {
                                                                     value={typeof slot.facultyId === 'object' ? slot.facultyId?._id : slot.facultyId}
                                                                     onChange={(e) => handleSlotChange(selectedDay, slot.periodNumber, 'facultyId', e.target.value)}>
                                                                     <option value="">Select Faculty</option>
-                                                                    {faculties.map(f => (
-                                                                        <option key={f._id} value={f.user?._id}>{f.user?.name}</option>
-                                                                    ))}
+                                                                    {faculties.map(f => {
+                                                                        const isCurrentDept = isHod && f.department === formData.department;
+                                                                        return (
+                                                                            <option key={f._id} value={f.user?._id}>
+                                                                                {f.user?.name} {isCurrentDept ? '(Your Dept)' : `(${f.department})`}
+                                                                            </option>
+                                                                        );
+                                                                    })}
                                                                 </select>
                                                             ) : <span className="text-gray-400">-</span>}
                                                         </td>

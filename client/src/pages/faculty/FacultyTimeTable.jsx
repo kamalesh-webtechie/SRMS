@@ -53,7 +53,7 @@ const FacultyTimeTable = () => {
                 if (!gridData[key]) gridData[key] = [];
                 gridData[key].push({
                     subject: p.subject,
-                    class: `${tt.department} - ${tt.year} Yr (${tt.section})`
+                    class: `${tt.year}-${tt.department.split(' ').map(w => w[0]).join('').toUpperCase()}(${tt.section})`
                 });
 
                 if (!allPeriods.find(ap => ap.periodNumber === p.periodNumber)) {

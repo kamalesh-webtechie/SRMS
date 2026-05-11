@@ -101,7 +101,7 @@ const StudentTimeTable = () => {
                                                     {slot.type === 'class' ? (
                                                         <div className="space-y-2">
                                                             <div className="text-sm font-bold text-gray-900 leading-tight">
-                                                                {slot.subject}
+                                                                {slot.subject.length > 5 ? `${slot.subject.substring(0, 3)}` : slot.subject}
                                                             </div>
                                                             <div className="flex items-center text-xs text-gray-600">
                                                                 <div className="h-5 w-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-[10px] font-bold mr-1.5 shrink-0">
@@ -129,26 +129,55 @@ const StudentTimeTable = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
-                    <div className="p-2 bg-blue-100 rounded-md text-blue-600 animate-pulse">
-                        <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h4 className="text-sm font-bold text-blue-900">Current Period</h4>
-                        <p className="text-xs text-blue-700 mt-0.5">Check the time to see your current class session.</p>
-                    </div>
                 </div>
-                {/* Legend */}
-                <div className="col-span-1 md:col-span-2 flex items-center justify-end gap-6 text-xs font-semibold text-gray-500">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-100 border border-blue-200"></div>
-                        <span>Regular Class</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-amber-100 border border-amber-200"></div>
-                        <span>Break / Lunch</span>
-                    </div>
+            </div>
+
+            {/* Faculty Information Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-indigo-600" />
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Faculty Information</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Faculty Name</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Emp ID</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {(() => {
+                                const facultyMap = new Map();
+                                timetable.days.forEach(d => {
+                                    d.periods.forEach(p => {
+                                        if (p.type === 'class' && p.facultyId) {
+                                            const fid = p.facultyId._id || p.facultyId;
+                                            if (!facultyMap.has(fid)) {
+                                                facultyMap.set(fid, {
+                                                    name: p.facultyId.name,
+                                                    empId: p.facultyId.facultyProfile?.employeeId || 'N/A',
+                                                    department: p.facultyId.facultyProfile?.department || 'N/A',
+                                                    subject: p.subject
+                                                });
+                                            }
+                                        }
+                                    });
+                                });
+                                
+                                return Array.from(facultyMap.values()).map((f, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{f.subject}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{f.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{f.empId}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{f.department}</td>
+                                    </tr>
+                                ));
+                            })()}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

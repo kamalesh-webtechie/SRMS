@@ -82,4 +82,15 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Virtual for Faculty Profile
+userSchema.virtual('facultyProfile', {
+    ref: 'FacultyProfile',
+    localField: '_id',
+    foreignField: 'user',
+    justOne: true
+});
+
+userSchema.set('toObject', { virtuals: true });
+userSchema.set('toJSON', { virtuals: true });
+
 module.exports = mongoose.model('User', userSchema);
