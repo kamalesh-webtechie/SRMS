@@ -133,6 +133,7 @@ const AnnouncementManagement = () => {
         });
         setEditingId(null);
         setShowForm(false);
+        setMessage(null);
     };
 
     const handleRoleToggle = (role) => {
@@ -179,6 +180,16 @@ const AnnouncementManagement = () => {
                     />
                 </div>
             </div>
+
+            {message && !showForm && (
+                <div className={clsx(
+                    "p-4 rounded-lg text-sm flex items-start gap-3 shadow-sm animate-fade-in",
+                    message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                )}>
+                    {message.type === 'success' ? <CheckCircle className="h-5 w-5 flex-shrink-0" /> : <AlertCircle className="h-5 w-5 flex-shrink-0" />}
+                    {message.text}
+                </div>
+            )}
 
             {/* Announcements List */}
             <div className="space-y-4">
