@@ -278,103 +278,62 @@ const StudentResults = () => {
                     <div className="space-y-10 animate-slide-up">
                         {examType === 'Semester' ? (
                             /* Terminal Result Card */
-                            <div className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden transform hover:-translate-y-2 transition-transform duration-700">
-                                <div className="bg-gradient-to-br from-primary via-secondary to-primary px-12 py-14 flex flex-col lg:flex-row justify-between items-center text-white relative">
-                                    <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
-                                    <div className="relative z-10 flex items-center gap-8 mb-8 lg:mb-0">
-                                        <div className="p-5 bg-white/10 backdrop-blur-3xl rounded-[2rem] border border-white/10 shadow-2xl">
-                                            <TrendingUp className="h-12 w-12 text-accent" />
-                                        </div>
-                                        <div>
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-accent/40 mb-3 leading-none">
-                                                Final Assessment
-                                            </div>
-                                            <h4 className="text-3xl font-black uppercase tracking-tight leading-none">Semester {result.semester} Console</h4>
-                                            <p className="text-white/50 text-sm font-black tracking-widest uppercase mt-3">Authenticated Result Stream</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="relative z-10 grid grid-cols-2 lg:grid-cols-3 gap-8 w-full lg:w-auto">
-                                        <div className="text-center bg-white/5 backdrop-blur-xl p-8 rounded-[2rem] border border-white/10 min-w-[160px]">
-                                            <span className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-3">Credits Earned</span>
-                                            <span className="text-5xl font-black tracking-tighter">{result.totalCredits}</span>
-                                        </div>
-                                        <div className="text-center bg-white p-8 rounded-[2rem] shadow-2xl min-w-[160px] transform scale-110 -rotate-2">
-                                            <span className="block text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-3">SGPA Metric</span>
-                                            <span className="text-6xl font-black text-primary tracking-tighter leading-none">{result.sgpa}</span>
-                                        </div>
-                                        <div 
-                                            className="text-center bg-primary/20 backdrop-blur-xl p-8 rounded-[2rem] border border-white/20 min-w-[160px] cursor-pointer group/cgpa relative"
-                                            onClick={() => setShowPassedOnlyCgpa(!showPassedOnlyCgpa)}
-                                        >
-                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/cgpa:opacity-100 transition-opacity whitespace-nowrap bg-white text-primary text-[10px] px-2 py-1 rounded shadow-lg font-bold">
-                                                Click to Toggle Mode
-                                            </div>
-                                            <span className="block text-[10px] font-black text-white/60 uppercase tracking-[0.2em] mb-3">
-                                                {showPassedOnlyCgpa ? "CGPA (Excl. Failures)" : "Global CGPA"}
-                                            </span>
-                                            <span className="text-5xl font-black text-white tracking-tighter leading-none">
-                                                {showPassedOnlyCgpa ? result.student?.cgpaExcludingFailures : result.student?.cgpa}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                 <div className="p-8 overflow-x-auto">
-                                    <table className="min-w-full">
+                                    <table className="min-w-full divide-y divide-gray-100">
                                         <thead>
-                                            <tr className="text-left text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] bg-slate-50 border-b border-slate-100">
-                                                <th className="px-12 py-8 whitespace-nowrap">Course Signature</th>
-                                                <th className="px-12 py-8 text-center whitespace-nowrap">Unit Weight</th>
-                                                <th className="px-12 py-8 text-center whitespace-nowrap">Achievement</th>
-                                                <th className="px-12 py-8 text-right whitespace-nowrap">Validation</th>
+                                            <tr className="text-left">
+                                                <th className="px-6 py-4 text-sm font-bold text-blue-600">Course Code</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-blue-600">Course Title</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-blue-600 text-center">Credit</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-blue-600 text-center">Grade</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-blue-600 text-right">Grade Point</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-50">
+                                        <tbody className="divide-y divide-gray-100">
                                             {result.subjects.map((sub, i) => (
-                                                <tr key={i} className="group hover:bg-slate-50/50 transition-all duration-500">
-                                                    <td className="px-12 py-8 whitespace-nowrap">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-lg font-black text-slate-800 group-hover:text-primary transition-colors">{sub.subjectName}</span>
-                                                            <span className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase mt-2">{sub.subjectCode}</span>
-                                                        </div>
+                                                <tr key={i} className="hover:bg-gray-50/50">
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm font-bold text-gray-700 uppercase">
+                                                        {sub.subjectCode}
                                                     </td>
-                                                    <td className="px-12 py-8 text-center whitespace-nowrap">
-                                                        <span className="text-sm font-black text-slate-400 group-hover:text-slate-800 transition-colors uppercase tracking-widest">{sub.credits} Units</span>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-500">
+                                                        {sub.subjectName}
                                                     </td>
-                                                     <td className="px-12 py-8 text-center whitespace-nowrap">
-                                                        <div className="flex flex-col items-center">
-                                                            <div className={clsx(
-                                                                "h-12 w-12 rounded-xl flex items-center justify-center text-xl font-black transition-all shadow-sm",
-                                                                sub.grade === 'U' ? "bg-red-50 text-red-600 border border-red-100" : "bg-slate-50 text-slate-800 group-hover:bg-primary group-hover:text-white"
-                                                            )}>
-                                                                {sub.grade}
-                                                            </div>
-                                                            <span className="text-[10px] font-bold text-slate-400 mt-2 uppercase">Pt: {sub.gradePoint}</span>
-                                                        </div>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-700 text-center">
+                                                        {sub.credits}
                                                     </td>
-                                                    <td className="px-12 py-8 text-right whitespace-nowrap">
-                                                        <span className={clsx(
-                                                            "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ring-1 ring-inset",
-                                                            sub.status === 'Pass' ? "bg-green-50 text-green-700 ring-green-100" : "bg-red-50 text-red-700 ring-red-100"
-                                                        )}>
-                                                            {sub.status === 'Pass' ? 'Authenticated' : 'Unconfirmed'}
-                                                        </span>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-700 text-center font-medium">
+                                                        {sub.grade}
+                                                    </td>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-700 text-right font-medium">
+                                                        {sub.gradePoint}
                                                     </td>
                                                 </tr>
                                             ))}
                                         </tbody>
+                                        <tfoot>
+                                            <tr className="bg-gray-50/80">
+                                                <td colSpan="2" className="px-6 py-4 text-sm font-bold text-gray-600">
+                                                    Total Credit Requirement: <span className="text-blue-600 ml-1">{result.totalCredits}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-gray-600 text-center">
+                                                    Total Credit Taken: <span className="text-blue-600 ml-1">{result.totalCredits}</span>
+                                                </td>
+                                                <td colSpan="2" className="px-6 py-4 text-sm font-bold text-gray-600 text-right">
+                                                    SGPA: <span className="text-blue-600 ml-1">{result.sgpa}</span>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
-
-                                <div className="px-12 py-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
-                                    <span>Institutional Academic Stream System</span>
-                                    <div className="flex gap-4">
-                                        <Stars className="h-4 w-4" />
-                                        <Stars className="h-4 w-4" />
-                                        <Stars className="h-4 w-4 text-accent" />
+                                
+                                {result.student?.cgpa && (
+                                    <div className="px-8 py-4 bg-blue-50/30 border-t border-gray-100 flex justify-end">
+                                        <div className="text-sm font-bold text-gray-700">
+                                            Cumulative GPA (CGPA): <span className="text-blue-700 text-lg ml-2">{result.student.cgpa}</span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         ) : (
                             /* Internal Reports Grid */
