@@ -67,19 +67,28 @@ const StudentResults = () => {
         doc.line(20, 32, 190, 32);
 
         // 2. Student Details
-        doc.setFontSize(12);
+        doc.setFontSize(11);
         doc.setTextColor(0);
         doc.text(`Name: ${student.name}`, 20, 45);
         doc.text(`Reg No: ${student.registerNumber || 'N/A'}`, 20, 52);
-        doc.text(`Department: ${student.department || 'N/A'}`, 120, 45);
-        doc.text(`Semester: ${result.semester}`, 120, 52);
-        doc.text(`Exam Type: ${examType}`, 20, 59);
-        doc.text(`Issued On: ${timestamp}`, 120, 59);
+        doc.text(`Department: ${student.department || 'N/A'}`, 20, 59);
+        
+        doc.text(`Year: ${student.currentYear || 'N/A'}`, 120, 45);
+        doc.text(`Section: ${student.section?.name || 'N/A'}`, 120, 52);
+        doc.text(`Semester: ${result.semester}`, 120, 59);
+        
+        doc.text(`Exam Type: ${examType}`, 20, 66);
+        doc.text(`Issued On: ${timestamp}`, 120, 66);
 
-        // 3. Results Table
+        // 3. Section Heading (e.g. Semester 1)
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(`RESULT: SEMESTER ${result.semester} - ${examType.toUpperCase()}`, 105, 80, { align: 'center' });
+
+        // 4. Results Table
         const tableColumn = examType === 'Semester' 
-            ? ["Subject Code", "Subject Name", "Credits", "Grade", "Points", "Status"]
-            : ["Subject Code", "Subject Name", "Marks", "Max Marks", "Grade", "Percentage"];
+            ? ["Course Code", "Course Title", "Credit", "Grade", "Grade Point"]
+            : ["Course Code", "Course Title", "Score", "Max", "Grade", "%"];
         
         const tableRows = [];
 
@@ -90,8 +99,7 @@ const StudentResults = () => {
                     sub.subjectName,
                     sub.credits,
                     sub.grade,
-                    sub.gradePoint,
-                    sub.status
+                    sub.gradePoint
                 ]);
             });
         } else {
@@ -102,13 +110,13 @@ const StudentResults = () => {
                     internal.marks,
                     internal.maxMarks,
                     internal.grade,
-                    `${((internal.marks / internal.maxMarks) * 100).toFixed(1)}%`
+                    `${((internal.marks / internal.maxMarks) * 100).toFixed(0)}%`
                 ]);
             });
         }
 
         doc.autoTable({
-            startY: 70,
+            startY: 85,
             head: [tableColumn],
             body: tableRows,
             theme: 'striped',
@@ -276,6 +284,15 @@ const StudentResults = () => {
                     </div>
                 ) : result ? (
                     <div className="space-y-10 animate-slide-up">
+                        {result && (
+                            <div className="mb-6">
+                                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                                    <FileText className="h-6 w-6 text-indigo-600" />
+                                    Semester {result.semester} - {examType}
+                                </h3>
+                            </div>
+                        )}
+
                         {examType === 'Semester' ? (
                             /* Terminal Result Card */
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
