@@ -178,7 +178,6 @@ const PublishResults = () => {
                             </div>
 
                             <div>
-                            <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Year</label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {['I', 'II', 'III', 'IV'].map(y => (
