@@ -15,7 +15,8 @@ const AIAnalysisCard = ({ studentName, academicHistory }) => {
             // Prepare data for AI
             // Flatten subjects from all semesters to find trends
             const allMarks = [];
-            academicHistory.forEach(sem => {
+            const history = academicHistory || [];
+            history.forEach(sem => {
                 sem.subjects.forEach(sub => {
                     // Convert grade to pseudo-marks if we don't have raw marks handy
                     // Or if we fixed the backend to return marks, better.
@@ -97,14 +98,15 @@ const AIAnalysisCard = ({ studentName, academicHistory }) => {
                             </div>
                         ) : (
                             <div className="prose prose-invert max-w-none text-indigo-50">
-                                {/* Simple markdown parser or just newline rendering */}
-                                {analysis.split('\n').map((line, i) => (
+                                {analysis ? analysis.split('\n').map((line, i) => (
                                     <p key={i} className="mb-2 leading-relaxed">
                                         {line.split('**').map((part, j) =>
                                             j % 2 === 1 ? <strong key={j} className="text-cyan-300">{part}</strong> : part
                                         )}
                                     </p>
-                                ))}
+                                )) : (
+                                    <p className="text-indigo-300 italic">No analysis data available.</p>
+                                )}
                             </div>
                         )}
                     </div>

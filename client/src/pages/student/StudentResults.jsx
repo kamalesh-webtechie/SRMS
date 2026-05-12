@@ -337,47 +337,65 @@ const StudentResults = () => {
                             </div>
                         ) : (
                             /* Internal Reports Grid */
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {result.internals.map((internal, i) => (
-                                    <div key={i} className="bg-white rounded-2xl p-8 shadow-lg shadow-slate-200/50 border border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden flex flex-col h-full">
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full -mr-10 -mt-10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                                        <div className="flex justify-between items-start mb-6 shrink-0 relative z-10">
-                                            <div className="h-14 w-14 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center text-2xl font-bold text-slate-800 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all shadow-sm">
-                                                {internal.grade}
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider rounded border border-slate-200">{internal.subjectCode}</span>
-                                            </div>
-                                        </div>
-
-                                        <h5 className="text-lg font-bold text-slate-900 leading-tight line-clamp-2 mb-6 flex-1 group-hover:text-indigo-700 transition-colors relative z-10">{internal.subjectName}</h5>
-
-                                        <div className="space-y-4 pt-6 border-t border-slate-100 shrink-0 relative z-10">
-                                            <div className="flex justify-between items-end">
-                                                <div>
-                                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Score</span>
-                                                    <span className="text-3xl font-extrabold text-slate-900">
-                                                        {internal.marks} <span className="text-sm text-slate-400 font-bold ml-0.5">/ {internal.maxMarks}</span>
-                                                    </span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Performance</span>
-                                                    <span className="text-sm font-bold text-indigo-600 px-2 py-1 bg-indigo-50 rounded-lg border border-indigo-100 inline-block">
-                                                        {((internal.marks / internal.maxMarks) * 100).toFixed(0)}%
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-indigo-600 rounded-full transition-all duration-1000 ease-out shadow-sm"
-                                                    style={{ width: `${(internal.marks / internal.maxMarks) * 100}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="p-8 overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-100">
+                                        <thead>
+                                            <tr className="text-left">
+                                                <th className="px-6 py-4 text-sm font-bold text-indigo-600">Course Code</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-indigo-600">Course Title</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-indigo-600 text-center">Score</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-indigo-600 text-center">Max</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-indigo-600 text-center">Percentage</th>
+                                                <th className="px-6 py-4 text-sm font-bold text-indigo-600 text-right">Grade</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {result.internals.map((internal, i) => (
+                                                <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm font-bold text-gray-700 uppercase">
+                                                        {internal.subjectCode}
+                                                    </td>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-500 font-medium">
+                                                        {internal.subjectName}
+                                                    </td>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-900 text-center font-black">
+                                                        {internal.marks}
+                                                    </td>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-400 text-center">
+                                                        {internal.maxMarks}
+                                                    </td>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-center">
+                                                        <div className="flex items-center justify-center gap-3">
+                                                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden hidden sm:block">
+                                                                <div 
+                                                                    className="h-full bg-indigo-500 rounded-full" 
+                                                                    style={{ width: `${(internal.marks / internal.maxMarks) * 100}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                                                                {((internal.marks / internal.maxMarks) * 100).toFixed(0)}%
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-6 whitespace-nowrap text-sm text-gray-700 text-right">
+                                                        <span className="h-10 w-10 inline-flex items-center justify-center rounded-lg bg-gray-50 border border-gray-200 font-black text-slate-700">
+                                                            {internal.grade}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Authenticated Continuous Assessment Report</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-400"></div>
+                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-300"></div>
+                                        <div className="h-1.5 w-1.5 rounded-full bg-indigo-200"></div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
                         )}
                     </div>
