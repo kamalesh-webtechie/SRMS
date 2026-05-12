@@ -4,11 +4,14 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const {
     publishResultYearly,
     unpublishResult,
-    getPublicationsSorted
+    getPublicationsSorted,
+    getPublicationPreview
 } = require('../controllers/resultPublicationController');
 
 router.use(protect);
 router.use(authorize('admin'));
+
+router.get('/preview', getPublicationPreview);
 
 router.route('/')
     .get(getPublicationsSorted)

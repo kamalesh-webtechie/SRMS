@@ -16,6 +16,10 @@ const resultPublicationSchema = new mongoose.Schema({
         required: true,
         enum: ['Internal 1', 'Internal 2', 'Semester']
     },
+    sectionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Section'
+    },
     publishedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -32,7 +36,7 @@ const resultPublicationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Unique index: departmentId + year + examType
-resultPublicationSchema.index({ departmentId: 1, year: 1, examType: 1 }, { unique: true });
+// Unique index: departmentId + year + examType + sectionId
+resultPublicationSchema.index({ departmentId: 1, year: 1, examType: 1, sectionId: 1 }, { unique: true });
 
 module.exports = mongoose.model('ResultPublication', resultPublicationSchema);

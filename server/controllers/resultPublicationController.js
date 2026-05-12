@@ -12,35 +12,41 @@ const { getSemestersFromYear } = require('../utils/academicUtils');
 // @access  Private/Admin
 const publishResultYearly = async (req, res) => {
     try {
-        const { departmentId, year, examType } = req.body;
+        const { departmentId, year, examType, sectionId } = req.body;
 
         if (!departmentId || !year || !examType) {
             return res.status(400).json({ message: 'Department, Year and Exam Type are required' });
         }
 
         // 1. Check if already published
-        const existing = await ResultPublication.findOne({ departmentId, year, examType });
+        const query = { departmentId, year, examType, sectionId: sectionId || null };
+        const existing = await ResultPublication.findOne(query);
         if (existing) {
-            return res.status(400).json({ message: 'Results for this batch/exam are already published' });
+            return res.status(400).json({ message: 'Results for this selection are already published' });
         }
 
-        // 2. Validate that marks exist for all sections and semesters in this year
+        // 2. Validate that marks exist
         const semesters = getSemestersFromYear(year);
-        const sections = await Section.find({ departmentId, semester: { $in: semesters } });
-        const sectionIds = sections.map(s => s._id);
+        
+        let sectionIds;
+        if (sectionId) {
+            sectionIds = [sectionId];
+        } else {
+            const sections = await Section.find({ departmentId, semester: { $in: semesters } });
+            sectionIds = sections.map(s => s._id);
+        }
 
         if (sectionIds.length === 0) {
-            return res.status(404).json({ message: `No active sections found for Year ${year} in this department` });
+            return res.status(404).json({ message: `No active sections found for this selection` });
         }
 
-        // STRICT VALIDATION: Verify that every subject assigned to these batches has been submitted
-        // A. Find all subjects assigned to these department & semesters
+        // Find all subjects assigned to these department & semesters
         const expectedSubjects = await Subject.find({ 
             departmentId, 
             semester: { $in: semesters } 
         });
 
-        // B. Find marks that are actually ready to be published for this exam
+        // Find marks ready to be published
         const readyMarks = await Mark.find({
             examType,
             sectionId: { $in: sectionIds },
@@ -48,19 +54,21 @@ const publishResultYearly = async (req, res) => {
             status: 'ready_to_publish'
         });
 
-        // C. Check for missing or incomplete subjects
         const readySubjectIds = readyMarks.map(m => m.subjectId.toString());
         const missingSubjects = expectedSubjects.filter(sub => !readySubjectIds.includes(sub._id.toString()));
 
-        if (missingSubjects.length > 0) {
-            return res.status(400).json({ 
-                message: `Publication blocked. Missing or unapproved marks for: ${missingSubjects.map(s => s.code).join(', ')}`,
-                missingCount: missingSubjects.length,
-                missingSubjects: missingSubjects.map(s => s.code)
-            });
+        // If we are publishing for a specific section, we only care about marks for THAT section
+        // If we are publishing for a whole year, we care about ALL sections.
+        // The current logic is a bit strict: it requires ALL subjects for ALL sections to be ready if sectionId is not provided.
+
+        if (missingSubjects.length > 0 && !sectionId) {
+             return res.status(400).json({ 
+                 message: `Publication blocked. Missing or unapproved marks for some subjects in the year.`,
+                 missingCount: missingSubjects.length
+             });
         }
 
-        // Check if there are any marks that are not ready (extra safety)
+        // Check if there are any marks that are not ready
         const pendingMarksCount = await Mark.countDocuments({
             examType,
             sectionId: { $in: sectionIds },
@@ -88,27 +96,87 @@ const publishResultYearly = async (req, res) => {
             departmentId,
             year,
             examType,
+            sectionId: sectionId || null,
             publishedBy: req.user._id,
             isPublished: true
         });
 
         // Audit Log
         await logAction({
-            action: 'PUBLISH_RESULTS_YEARLY',
+            action: 'PUBLISH_RESULTS',
             actorId: req.user._id,
             actorName: req.user.name,
             targetEntity: 'ResultPublication',
-            details: { departmentId, year, examType },
+            details: { departmentId, year, examType, sectionId },
             req
         });
 
         res.status(201).json({
-            message: `Results for Year ${year} (${examType}) published successfully`,
+            message: `Results published successfully`,
             publication
         });
 
     } catch (error) {
         console.error("Publish Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get preview of marks status before publishing
+// @route   GET /api/result-publications/preview
+// @access  Private/Admin
+const getPublicationPreview = async (req, res) => {
+    try {
+        const { departmentId, year, examType, sectionId } = req.query;
+
+        if (!departmentId || !year || !examType) {
+            return res.status(400).json({ message: 'Missing required parameters' });
+        }
+
+        const semesters = getSemestersFromYear(year);
+        
+        let sectionIds;
+        if (sectionId) {
+            sectionIds = [sectionId];
+        } else {
+            const sections = await Section.find({ departmentId, semester: { $in: semesters } });
+            sectionIds = sections.map(s => s._id);
+        }
+
+        // Get all subjects for these semesters
+        const subjects = await Subject.find({ departmentId, semester: { $in: semesters } }).select('name code semester');
+
+        // Get marks status for these subjects/sections
+        const marks = await Mark.find({
+            examType,
+            sectionId: { $in: sectionIds },
+            semester: { $in: semesters }
+        }).select('subjectId sectionId status');
+
+        // Map subjects to their status per section
+        const preview = subjects.map(sub => {
+            const subjectMarks = marks.filter(m => m.subjectId.toString() === sub._id.toString());
+            
+            // If sectionId is provided, we only have one section to worry about
+            // If not, we check if ALL sections for this year have this subject ready
+            
+            return {
+                _id: sub._id,
+                name: sub.name,
+                code: sub.code,
+                semester: sub.semester,
+                statusSummary: {
+                    total: sectionIds.length,
+                    ready: subjectMarks.filter(m => m.status === 'ready_to_publish').length,
+                    published: subjectMarks.filter(m => m.status === 'published').length,
+                    pending: subjectMarks.filter(m => ['draft', 'submitted_to_hod'].includes(m.status)).length,
+                    missing: sectionIds.length - subjectMarks.length
+                }
+            };
+        });
+
+        res.status(200).json(preview);
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
@@ -181,5 +249,6 @@ const getPublicationsSorted = async (req, res) => {
 module.exports = {
     publishResultYearly,
     unpublishResult,
-    getPublicationsSorted
+    getPublicationsSorted,
+    getPublicationPreview
 };
