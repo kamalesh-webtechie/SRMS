@@ -42,7 +42,10 @@ const publishResultYearly = async (req, res) => {
 
         // Find all subjects assigned to these department & semesters
         const expectedSubjects = await Subject.find({ 
-            departmentId, 
+            $or: [
+                { departmentId },
+                { isCommon: true }
+            ],
             semester: { $in: semesters } 
         });
 
@@ -144,7 +147,13 @@ const getPublicationPreview = async (req, res) => {
         }
 
         // Get all subjects for these semesters
-        const subjects = await Subject.find({ departmentId, semester: { $in: semesters } }).select('name code semester');
+        const subjects = await Subject.find({ 
+            $or: [
+                { departmentId },
+                { isCommon: true }
+            ],
+            semester: { $in: semesters } 
+        }).select('name code semester');
 
         // Get marks status for these subjects/sections
         const marks = await Mark.find({
