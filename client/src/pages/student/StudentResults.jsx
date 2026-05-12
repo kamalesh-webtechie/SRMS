@@ -25,6 +25,7 @@ import autoTable from 'jspdf-autotable';
 const StudentResults = () => {
     const { user } = useAuth();
     const [profile, setProfile] = useState(null);
+    const [settings, setSettings] = useState(null);
     const [semester, setSemester] = useState('');
     const [examType, setExamType] = useState('Internal 1');
     const [result, setResult] = useState(null);
@@ -32,21 +33,25 @@ const StudentResults = () => {
     const [showConversionTable, setShowConversionTable] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
-    // Load profile key data
+    // Load profile and settings
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             try {
-                const { data } = await api.get('/auth/me');
-                if (data.profile) {
-                    setProfile(data.profile);
-                    setSemester(data.profile.semester);
+                // Fetch user profile
+                const { data: userData } = await api.get('/auth/me');
+                if (userData.profile) {
+                    setProfile(userData.profile);
+                    setSemester(userData.profile.semester);
                 }
+
+                // Fetch system settings
+                const { data: settingsData } = await api.get('/system');
+                setSettings(settingsData);
             } catch (err) {
-                console.error(err);
+                console.error("Failed to fetch initial data:", err);
             }
         };
-        fetchProfile();
+        fetchData();
     }, []);
 
     const handleDownloadPDF = () => {
@@ -60,10 +65,12 @@ const StudentResults = () => {
             const student = result.student || {};
             const timestamp = new Date().toLocaleString();
 
+            const collegeName = settings?.collegeProfile?.collegeName || 'SRMS COLLEGE';
+
             // 1. Institutional Header
             doc.setFontSize(22);
             doc.setTextColor(63, 81, 181); // Indigo
-            doc.text('SRMS COLLEGE', 105, 20, { align: 'center' });
+            doc.text(collegeName.toUpperCase(), 105, 20, { align: 'center' });
             
             doc.setFontSize(10);
             doc.setTextColor(100);
