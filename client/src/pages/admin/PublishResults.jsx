@@ -178,7 +178,24 @@ const PublishResults = () => {
                             </div>
 
                             <div>
+                            <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Year</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {['I', 'II', 'III', 'IV'].map(y => (
+                                        <button
+                                            key={y}
+                                            type="button"
+                                            onClick={() => setSelectedYear(y)}
+                                            className={clsx(
+                                                "py-2 px-3 text-sm font-medium rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500",
+                                                selectedYear === y
+                                                    ? "bg-indigo-600 text-white border-transparent"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            )}
+                                        >
+                                            {y}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
