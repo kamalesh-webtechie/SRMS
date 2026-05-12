@@ -19,8 +19,8 @@ import {
     Zap
 } from 'lucide-react';
 import clsx from 'clsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const StudentResults = () => {
     const { user } = useAuth();
@@ -121,7 +121,7 @@ const StudentResults = () => {
                 });
             }
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: 85,
                 head: [tableColumn],
                 body: tableRows,
