@@ -50,97 +50,113 @@ const StudentResults = () => {
     }, []);
 
     const handleDownloadPDF = () => {
-        if (!result) return;
+        try {
+            if (!result) {
+                alert("Please retrieve your records first.");
+                return;
+            }
 
-        const doc = new jsPDF();
-        const student = result.student || user;
-        const timestamp = new Date().toLocaleString();
+            const doc = new jsPDF();
+            const student = result.student || {};
+            const timestamp = new Date().toLocaleString();
 
-        // 1. Institutional Header
-        doc.setFontSize(22);
-        doc.setTextColor(63, 81, 181); // Indigo
-        doc.text('SRMS COLLEGE', 105, 20, { align: 'center' });
-        
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text('Authenticated Academic Transcript', 105, 28, { align: 'center' });
-        doc.line(20, 32, 190, 32);
-
-        // 2. Student Details
-        doc.setFontSize(11);
-        doc.setTextColor(0);
-        doc.text(`Name: ${student.name}`, 20, 45);
-        doc.text(`Reg No: ${student.registerNumber || 'N/A'}`, 20, 52);
-        doc.text(`Department: ${student.department || 'N/A'}`, 20, 59);
-        
-        doc.text(`Year: ${student.currentYear || 'N/A'}`, 120, 45);
-        doc.text(`Section: ${student.section?.name || 'N/A'}`, 120, 52);
-        doc.text(`Semester: ${result.semester}`, 120, 59);
-        
-        doc.text(`Exam Type: ${examType}`, 20, 66);
-        doc.text(`Issued On: ${timestamp}`, 120, 66);
-
-        // 3. Section Heading (e.g. Semester 1)
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text(`RESULT: SEMESTER ${result.semester} - ${examType.toUpperCase()}`, 105, 80, { align: 'center' });
-
-        // 4. Results Table
-        const tableColumn = examType === 'Semester' 
-            ? ["Course Code", "Course Title", "Credit", "Grade", "Grade Point"]
-            : ["Course Code", "Course Title", "Score", "Max", "Grade", "%"];
-        
-        const tableRows = [];
-
-        if (examType === 'Semester') {
-            result.subjects.forEach(sub => {
-                tableRows.push([
-                    sub.subjectCode,
-                    sub.subjectName,
-                    sub.credits,
-                    sub.grade,
-                    sub.gradePoint
-                ]);
-            });
-        } else {
-            result.internals.forEach(internal => {
-                tableRows.push([
-                    internal.subjectCode,
-                    internal.subjectName,
-                    internal.marks,
-                    internal.maxMarks,
-                    internal.grade,
-                    `${((internal.marks / internal.maxMarks) * 100).toFixed(0)}%`
-                ]);
-            });
-        }
-
-        doc.autoTable({
-            startY: 85,
-            head: [tableColumn],
-            body: tableRows,
-            theme: 'striped',
-            headStyles: { fillColor: [63, 81, 181], textColor: 255 },
-            alternateRowStyles: { fillColor: [245, 245, 245] },
-            margin: { left: 20, right: 20 }
-        });
-
-        // 4. Summary Footer
-        const finalY = doc.lastAutoTable.finalY + 15;
-        if (examType === 'Semester') {
-            doc.setFontSize(14);
-            doc.text(`SGPA: ${result.sgpa}`, 20, finalY);
-            doc.text(`Total Credits: ${result.totalCredits}`, 120, finalY);
+            // 1. Institutional Header
+            doc.setFontSize(22);
+            doc.setTextColor(63, 81, 181); // Indigo
+            doc.text('SRMS COLLEGE', 105, 20, { align: 'center' });
+            
             doc.setFontSize(10);
-            doc.text(`Current CGPA: ${student.cgpa || 'N/A'}`, 20, finalY + 10);
+            doc.setTextColor(100);
+            doc.text('Authenticated Academic Transcript', 105, 28, { align: 'center' });
+            doc.line(20, 32, 190, 32);
+
+            // 2. Student Details
+            doc.setFontSize(11);
+            doc.setTextColor(0);
+            doc.text(`Name: ${student.name || user?.name || 'N/A'}`, 20, 45);
+            doc.text(`Reg No: ${student.registerNumber || 'N/A'}`, 20, 52);
+            doc.text(`Department: ${student.department || 'N/A'}`, 20, 59);
+            
+            doc.text(`Year: ${student.currentYear || 'N/A'}`, 120, 45);
+            doc.text(`Section: ${student.section?.name || 'N/A'}`, 120, 52);
+            doc.text(`Semester: ${result.semester || 'N/A'}`, 120, 59);
+            
+            doc.text(`Exam Type: ${examType}`, 20, 66);
+            doc.text(`Issued On: ${timestamp}`, 120, 66);
+
+            // 3. Section Heading
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text(`RESULT: SEMESTER ${result.semester || ''} - ${examType.toUpperCase()}`, 105, 80, { align: 'center' });
+
+            // 4. Results Table
+            const tableColumn = examType === 'Semester' 
+                ? ["Course Code", "Course Title", "Credit", "Grade", "Grade Point"]
+                : ["Course Code", "Course Title", "Score", "Max", "Grade", "%"];
+            
+            const tableRows = [];
+            const subjects = result.subjects || [];
+            const internals = result.internals || [];
+
+            if (examType === 'Semester') {
+                subjects.forEach(sub => {
+                    tableRows.push([
+                        sub.subjectCode || 'N/A',
+                        sub.subjectName || 'N/A',
+                        sub.credits || '0',
+                        sub.grade || '-',
+                        sub.gradePoint || '0'
+                    ]);
+                });
+            } else {
+                internals.forEach(internal => {
+                    tableRows.push([
+                        internal.subjectCode || 'N/A',
+                        internal.subjectName || 'N/A',
+                        internal.marks || '0',
+                        internal.maxMarks || '0',
+                        internal.grade || '-',
+                        internal.maxMarks > 0 ? `${((internal.marks / internal.maxMarks) * 100).toFixed(0)}%` : '0%'
+                    ]);
+                });
+            }
+
+            doc.autoTable({
+                startY: 85,
+                head: [tableColumn],
+                body: tableRows,
+                theme: 'striped',
+                headStyles: { fillColor: [63, 81, 181], textColor: 255 },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: 20, right: 20 }
+            });
+
+            // 5. Summary Footer
+            const finalY = (doc.lastAutoTable?.finalY || 150) + 15;
+            if (examType === 'Semester') {
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text(`SGPA: ${result.sgpa || '0.00'}`, 20, finalY);
+                doc.text(`Total Credits: ${result.totalCredits || '0'}`, 120, finalY);
+                
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.text(`Cumulative GPA (CGPA): ${student.cgpa || 'N/A'}`, 20, finalY + 10);
+            } else {
+                doc.setFontSize(10);
+                doc.text('Note: This is an internal assessment report.', 20, finalY);
+            }
+
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('This is a computer-generated document and does not require a physical signature.', 105, 280, { align: 'center' });
+            doc.text(`SRMS Digital Registry Verification Code: ${Math.random().toString(36).substring(2, 10).toUpperCase()}`, 105, 285, { align: 'center' });
+
+            doc.save(`${student.registerNumber || 'Student'}_Results_Sem${result.semester}_${examType.replace(' ', '_')}.pdf`);
+        } catch (err) {
+            console.error("PDF Generation Error:", err);
+            alert("Failed to generate PDF. Please check the console for details.");
         }
-
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text('This is a computer-generated document and does not require a physical signature.', 105, 280, { align: 'center' });
-        doc.text(`SRMS Digital Registry Verification Code: ${Math.random().toString(36).substring(2, 10).toUpperCase()}`, 105, 285, { align: 'center' });
-
-        doc.save(`${student.registerNumber || 'Student'}_Results_Sem${result.semester}_${examType.replace(' ', '_')}.pdf`);
     };
 
     const fetchResult = async () => {
