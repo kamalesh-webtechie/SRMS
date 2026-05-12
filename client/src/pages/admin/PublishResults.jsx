@@ -63,7 +63,7 @@ const PublishResults = () => {
             // Mapping year to typical semesters for section fetching
             const yearToSem = { 'I': 1, 'II': 3, 'III': 5, 'IV': 7 };
             const sem = yearToSem[selectedYear];
-            const { data } = await api.get(`/sections/dept/${selectedDeptId}/${sem}`);
+            const { data } = await api.get(`/sections/by-department/${selectedDeptId}/${sem}`);
             setSections(data);
             setSelectedSectionId(''); // Reset section when dept/year changes
         } catch (error) {
